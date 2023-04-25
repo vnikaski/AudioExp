@@ -3,9 +3,8 @@ from tensorflow import keras
 import pandas as pd
 import os
 
-# TODO: przeliczyć okna czasowe (x_axis) bo liczę źle (uwzględnić hop)
 
-class FSD50K(keras.utils.Sequence):
+class FSD50K_preprocessed(keras.utils.Sequence):
     def __init__(self, data_path, classes=None, batch_size=32, shuffle=True, test_mode=False, val_mode=False, sr=22050, window_s = 1, n_mels=1024, n_fft=2048, hop=44):
         print("initialising generator...")
         self.data_path = data_path
@@ -86,7 +85,7 @@ class FSD50K(keras.utils.Sequence):
             working.append(id)
             if spec.shape[0] != self.n_mels:
                 raise ValueError(f"Got spectrogram with {spec.shape[0]} mels, {self.n_mels} expected")
-            if spec.shape[1] >  width:
+            if spec.shape[1] > width:
                 begin = np.random.randint(0, spec.shape[1]-width)
                 spec = spec[:, begin : begin + width]
                 X[i-batch_diff,] = spec.reshape((*spec.shape,1))

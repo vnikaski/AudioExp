@@ -29,4 +29,3 @@ def dataset_to_mel(dataset_dir, save_dir=None):
         i += 1
 
 
-dataset_to_mel(dataset_dir='/Volumes/T7/audibilization/data/FSD50K.dev_audio/', save_dir='/Volumes/Folder1/dev_spectrograms/')

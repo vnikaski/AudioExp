@@ -1,28 +1,47 @@
-from generators.FSD50K import FSD50K
-from matplotlib import pyplot as plt
-import librosa.display
+from generators.TTSGenre import TTSGenre
+from models.models import Kell2018
+from utils.losses import unconcerned_categorical_crossentropy
 import tensorflow as tf
+import warnings, sys, argparse
 
-"""
+parser = argparse.ArgumentParser()
 
-gen = FSD50K('/Volumes/Folder1/', batch_size=1, n_mels=256)
-data = gen[0]
-print(data[0].shape)
-print(data[1].shape)
+parser.add_argument('-l', '--libripath', help='Path to folder with all LibriTTS subsets')
+parser.add_argument('-g', '--gtzanpath', help='Path to folder with GTZAN dataset')
+parser.add_argument('-b', '--batchsize')
 
-librosa.display.specshow(data[0][0,:,:,0], sr=22050, hop_length=int(0.002*22050), x_axis='time', y_axis='mel')
-plt.colorbar()
-plt.show()
+args = parser.parse_args()
 
-"""
 
-if tf.test.gpu_device_name():
-    print(f'GPU: {tf.test.gpu_device_name()}')
-else:
-    print("no GPU used")
 
-model = tf.keras.applications.MobileNetV3Small(include_top=True, weights=None, input_shape=(256, 501, 1), classes=200, include_preprocessing=False)
-train_gen = FSD50K('/Volumes/Folder1/', batch_size=64, n_mels=256)
-model.compile(loss=tf.keras.losses.categorical_crossentropy)
-print("model compiled")
-model.fit(x=train_gen, epochs=1, verbose=1)
+gen = TTSGenre(libri_path=args.libripath,
+               gtzan_path=args.gtzanpath,
+               batch_size=int(args.batchsize)
+               )
+
+xs, ys = gen.get_sample()
+print(xs.shape)
+input_shape = xs.shape[1:]
+wout_shape = ys['wout'].shape[1:]
+gout_shape = ys['gout'].shape[1:]
+
+
+output_signature = (tf.TensorSpec(shape=(None, *xs.shape[1:])),
+                    {'wout': tf.TensorSpec(shape=(None, *wout_shape)),
+                     'gout': tf.TensorSpec(shape=(None, *gout_shape))})
+
+gen.output_signature = output_signature
+
+
+ds = tf.data.Dataset.from_generator(gen,
+                                    output_signature=output_signature)
+model = Kell2018(input_shape, wout_shape[0], gout_shape[0])
+model.compile(loss={'wout':unconcerned_categorical_crossentropy, 'gout':unconcerned_categorical_crossentropy}, optimizer='adam')
+print(model.summary())
+ds = ds.apply(tf.data.experimental.assert_cardinality(len(gen)))
+cp_callback = tf.keras.callbacks.ModelCheckpoint(filepath='./checkpoints',
+                                                 save_weights_only=True,
+                                                 verbose=1)
+warnings.filterwarnings(action='ignore', category=FutureWarning)
+model.fit(ds)  # noqa
+=
