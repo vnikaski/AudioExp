@@ -9,6 +9,7 @@ parser = argparse.ArgumentParser()
 parser.add_argument('-l', '--libripath', help='Path to folder with all LibriTTS subsets')
 parser.add_argument('-g', '--gtzanpath', help='Path to folder with GTZAN dataset')
 parser.add_argument('-b', '--batchsize')
+parser.add_argument('-e', '--epochs')
 
 args = parser.parse_args()
 
@@ -43,5 +44,5 @@ cp_callback = tf.keras.callbacks.ModelCheckpoint(filepath='./checkpoints',
                                                  save_weights_only=True,
                                                  verbose=1)
 warnings.filterwarnings(action='ignore', category=FutureWarning)
-model.fit(ds)  # noqa
+model.fit(ds, epochs=int(args.epochs))  # noqa
 
