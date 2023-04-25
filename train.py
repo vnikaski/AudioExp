@@ -44,4 +44,4 @@ cp_callback = tf.keras.callbacks.ModelCheckpoint(filepath='./checkpoints',
                                                  verbose=1)
 warnings.filterwarnings(action='ignore', category=FutureWarning)
 model.fit(ds)  # noqa
-=
+
