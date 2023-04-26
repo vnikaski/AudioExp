@@ -4,6 +4,7 @@ from tensorflow import keras
 import pandas as pd
 import os
 from preprocessing.spectrograms import get_mel_spectrogram
+import stopit
 
 
 class GTZAN(keras.utils.Sequence):
@@ -62,9 +63,11 @@ class GTZAN(keras.utils.Sequence):
             wavname = f'{codename[0]}.{codename[1]}.{codename[-1]}'
             k = int(codename[2])
             fname = os.path.join(self.data_path, os.path.join(self.index.iloc[id]['label'], wavname))
-            print(fname)
             try:
-                wavf, _ = librosa.load(fname, sr=22050)
+                with stopit.ThreadingTimeout(2) as context_manager:
+                    wavf, _ = librosa.load(fname, sr=22050)
+                if context_manager.state == context_manager.TIMED_OUT:
+                    raise stopit.TimeoutException
             except:
                 print(f'loading file {fname} raised an exception, this file was skipped')
                 batch_diff += 1

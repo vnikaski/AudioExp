@@ -1,6 +1,6 @@
 from generators.TTSGenre import TTSGenre
 from models.models import Kell2018
-from utils.losses import unconcerned_categorical_crossentropy
+from utils.losses import Unconcerned_CCE
 import tensorflow as tf
 import warnings, sys, argparse
 
@@ -37,12 +37,12 @@ gen.output_signature = output_signature
 ds = tf.data.Dataset.from_generator(gen,
                                     output_signature=output_signature)
 model = Kell2018(input_shape, wout_shape[0], gout_shape[0])
-model.compile(loss={'wout':unconcerned_categorical_crossentropy, 'gout':unconcerned_categorical_crossentropy}, optimizer='adam')
+model.compile(loss={'wout':Unconcerned_CCE(), 'gout':Unconcerned_CCE()}, optimizer='adam', metrics=['accuracy'])
 print(model.summary())
 ds = ds.apply(tf.data.experimental.assert_cardinality(len(gen)))
 cp_callback = tf.keras.callbacks.ModelCheckpoint(filepath='./checkpoints',
                                                  save_weights_only=True,
                                                  verbose=1)
 warnings.filterwarnings(action='ignore', category=FutureWarning)
-model.fit(ds, epochs=int(args.epochs))  # noqa
+model.fit(ds, epochs=int(args.epochs), batch_size=args.batchsize)  # noqa
 

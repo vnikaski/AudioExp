@@ -4,7 +4,7 @@ from tensorflow import keras
 import pandas as pd
 import os
 from preprocessing.spectrograms import get_mel_spectrogram
-
+import stopit
 
 class LibriTTSClean(keras.utils.Sequence):
     def __init__(self, data_path, mode='train', words=200, batch_size=32, shuffle=True, window_s=1, which_word=2, sr=24000, n_mels=512, n_fft=2048, hop=44):
@@ -106,9 +106,11 @@ class LibriTTSClean(keras.utils.Sequence):
         for i,id in enumerate(batch_ids):
             loc = self.index.iloc[id]['fname'].split('_')
             fname = os.path.join(os.path.join(self.data_path, f'{loc[0]}/{loc[1]}'), self.index.iloc[id]['fname']) + '.wav'
-            print(fname)
             try:
-                wavf, _ = librosa.load(fname, sr=24000)
+                with stopit.ThreadingTimeout(2) as context_manager:
+                    wavf, _ = librosa.load(fname, sr=24000)
+                if context_manager.state == context_manager.TIMED_OUT:
+                    raise stopit.TimeoutException
             except:
                 print(f'loading file {fname} raised an exception, this file was skipped')
                 batch_diff += 1
