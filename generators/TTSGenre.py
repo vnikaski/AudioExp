@@ -52,6 +52,10 @@ class TTSGenre(keras.utils.Sequence):
         gout = tf.constant(gout)
         return keras.backend.variable(X), {'wout': wout, 'gout': gout}
 
+    def on_epoch_end(self):
+        self.libriGen.on_epoch_end()
+        self.gtzanGen.on_epoch_end()
+
     def get_sample(self):
         X_l, y_l = self.libriGen.get_sample()
         X_g, y_g = self.gtzanGen.get_sample()
