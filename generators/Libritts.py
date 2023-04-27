@@ -111,8 +111,8 @@ class LibriTTSClean(keras.utils.Sequence):
                     wavf, _ = librosa.load(fname, sr=24000)
                 if context_manager.state == context_manager.TIMED_OUT:
                     raise stopit.TimeoutException
-            except:
-                print(f'loading file {fname} raised an exception, this file was skipped')
+            except OSError as e:
+                print(f'loading file {fname} raised an exception {e}, this file was skipped')
                 batch_diff += 1
                 new_X = np.empty((len(batch_ids)-batch_diff, self.n_mels, width, 1))
                 new_y = np.empty((len(batch_ids)-batch_diff, len(self.words)))
