@@ -7,7 +7,7 @@ from preprocessing.spectrograms import get_mel_spectrogram
 import stopit
 
 class LibriTTSClean(keras.utils.Sequence):
-    def __init__(self, data_path, mode='train', words=200, batch_size=32, shuffle=True, window_s=1, which_word=2, sr=24000, n_mels=512, n_fft=2048, hop=44):
+    def __init__(self, data_path, mode='train', words=200, batch_size=32, shuffle=True, window_s=1, which_word=2, sr=24000, n_mels=512, n_fft=2048, hop=44, quiet=False):
         print('initialising Libri generator...')
         self.data_path = data_path
         self.batch_size = batch_size
@@ -22,6 +22,7 @@ class LibriTTSClean(keras.utils.Sequence):
         self.n_fft = n_fft
         self.hop = hop
         self.window_s = window_s
+        self.quiet = quiet
         self.mode = mode
         if self.mode == 'train':
             self.subset = 'train-clean-360'
@@ -112,7 +113,8 @@ class LibriTTSClean(keras.utils.Sequence):
                 if context_manager.state == context_manager.TIMED_OUT:
                     raise stopit.TimeoutException
             except Exception as e:
-                print(f'loading file {fname} raised an exception {e}, this file was skipped')
+                if not self.quiet:
+                    print(f'loading file {fname} raised an exception {e}, this file was skipped')
                 batch_diff += 1
                 new_X = np.empty((len(batch_ids)-batch_diff, self.n_mels, width, 1))
                 new_y = np.empty((len(batch_ids)-batch_diff, len(self.words)))
