@@ -107,11 +107,11 @@ class LibriTTSClean(keras.utils.Sequence):
             loc = self.index.iloc[id]['fname'].split('_')
             fname = os.path.join(os.path.join(self.data_path, f'{loc[0]}/{loc[1]}'), self.index.iloc[id]['fname']) + '.wav'
             try:
-                with stopit.ThreadingTimeout(2) as context_manager:
+                with stopit.ThreadingTimeout(10) as context_manager:
                     wavf, _ = librosa.load(fname, sr=24000)
                 if context_manager.state == context_manager.TIMED_OUT:
                     raise stopit.TimeoutException
-            except OSError as e:
+            except Exception as e:
                 print(f'loading file {fname} raised an exception {e}, this file was skipped')
                 batch_diff += 1
                 new_X = np.empty((len(batch_ids)-batch_diff, self.n_mels, width, 1))
