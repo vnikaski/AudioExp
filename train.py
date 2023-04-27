@@ -38,7 +38,7 @@ gen.output_signature = output_signature
 ds = tf.data.Dataset.from_generator(gen,
                                     output_signature=output_signature)
 model = Kell2018(input_shape, wout_shape[0], gout_shape[0])
-model.compile(loss={'wout':Unconcerned_CCE(), 'gout':Unconcerned_CCE()}, optimizer='adam', metrics=[UnconcernedAccuracy])
+model.compile(loss={'wout':Unconcerned_CCE(), 'gout':Unconcerned_CCE()}, optimizer='adam', metrics=[UnconcernedAccuracy()])
 print(model.summary())
 ds = ds.apply(tf.data.experimental.assert_cardinality(len(gen)))
 cp_callback = tf.keras.callbacks.ModelCheckpoint(filepath='./checkpoints',
