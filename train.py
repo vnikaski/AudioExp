@@ -1,7 +1,7 @@
 from generators.TTSGenre import TTSGenre
 from models.models import Kell2018
 from utils.losses import Unconcerned_CCE
-from keras.metrics import TopKCategoricalAccuracy
+from keras.metrics import TopKCategoricalAccuracy, CategoricalAccuracy
 import tensorflow as tf
 import warnings, sys, argparse
 from keras.optimizers import Adam
@@ -47,7 +47,7 @@ ds = tf.data.Dataset.from_generator(gen,
 model = Kell2018(input_shape, wout_shape[0], gout_shape[0])
 model.compile(loss={'wout':Unconcerned_CCE(), 'gout':Unconcerned_CCE()},
               optimizer=Adam(learning_rate=float(args.lr)),
-              metrics={'wout': [UnconcernedAccuracy(), TopKCategoricalAccuracy(k=5)], 'gout': [UnconcernedAccuracy(), TopKCategoricalAccuracy(k=2)]},
+              metrics={'wout': [CategoricalAccuracy(), TopKCategoricalAccuracy(k=5)], 'gout': [CategoricalAccuracy(), TopKCategoricalAccuracy(k=2)]},
               run_eagerly=True
               )
 print(model.summary())
@@ -56,5 +56,5 @@ cp_callback = tf.keras.callbacks.ModelCheckpoint(filepath='./checkpoints',
                                                  save_weights_only=True,
                                                  verbose=1)
 warnings.filterwarnings(action='ignore', category=FutureWarning)
-model.fit(ds, epochs=int(args.epochs), batch_size=args.batchsize, callbacks=[LambdaCallback(on_epoch_end=gen.on_epoch_end)])  # noqa
+model.fit(ds, epochs=int(args.epochs), batch_size=args.batchsize, callbacks=[LambdaCallback(on_epoch_end=gen.on_epoch_end), cp_callback])  # noqa
 

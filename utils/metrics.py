@@ -15,7 +15,7 @@ class UnconcernedAccuracy(tf.keras.metrics.Metric):
             sample_weight = sample_weight[indices]
 
         acc = CategoricalAccuracy()
-        self.unconcerned_acc.assign_add(acc.result().numpy())
+        self.unconcerned_acc.assign_add(acc.result())
 
     def result(self):
         return self.unconcerned_acc
