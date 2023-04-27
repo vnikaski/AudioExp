@@ -13,12 +13,6 @@ class GTZAN(keras.utils.Sequence):
         self.data_path = data_path
         self.batch_size = batch_size
         self.shuffle = shuffle
-
-        if sr != 22050:
-            self.resample = True
-        else:
-            self.resample = False
-
         self.sr = sr
         self.n_mels = n_mels
         self.n_fft = n_fft
@@ -66,7 +60,7 @@ class GTZAN(keras.utils.Sequence):
             fname = os.path.join(self.data_path, os.path.join(self.index.iloc[id]['label'], wavname))
             try:
                 with stopit.ThreadingTimeout(2) as context_manager:
-                    wavf, _ = librosa.load(fname, sr=22050)
+                    wavf, _ = librosa.load(fname, sr=self.sr)
                 if context_manager.state == context_manager.TIMED_OUT:
                     raise stopit.TimeoutException
             except:
@@ -80,8 +74,7 @@ class GTZAN(keras.utils.Sequence):
                 X = new_X
                 y = new_y
                 continue
-            if self.resample:
-                wavf = librosa.resample(wavf, orig_sr=22050, target_sr=self.sr)
+
             if len(wavf) >= int(self.sr*self.window_s):
                 begin = np.random.randint(k*3*self.sr, (k*3+2)*self.sr)
                 wavf = wavf[begin : begin+int(self.sr*self.window_s)]

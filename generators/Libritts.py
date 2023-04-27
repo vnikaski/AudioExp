@@ -12,11 +12,6 @@ class LibriTTSClean(keras.utils.Sequence):
         self.data_path = data_path
         self.batch_size = batch_size
         self.shuffle = shuffle
-
-        if sr != 24000:
-            self.resample=True
-        else:
-            self.resample=False
         self.sr = sr
         self.n_mels = n_mels
         self.n_fft = n_fft
@@ -109,7 +104,7 @@ class LibriTTSClean(keras.utils.Sequence):
             fname = os.path.join(os.path.join(self.data_path, f'{loc[0]}/{loc[1]}'), self.index.iloc[id]['fname']) + '.wav'
             try:
                 with stopit.ThreadingTimeout(10) as context_manager:
-                    wavf, _ = librosa.load(fname, sr=24000)
+                    wavf, _ = librosa.load(fname, sr=self.sr)
                 if context_manager.state == context_manager.TIMED_OUT:
                     raise stopit.TimeoutException
             except Exception as e:
@@ -123,9 +118,6 @@ class LibriTTSClean(keras.utils.Sequence):
                 X = new_X
                 y = new_y
                 continue
-            if self.resample:
-                wavf = librosa.resample(wavf, orig_sr=24000, target_sr=self.sr)
-
             if len(wavf) >= int(self.sr*self.window_s):
                 wavf = wavf[:int(self.sr*self.window_s)]
             else:
