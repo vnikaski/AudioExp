@@ -56,5 +56,5 @@ cp_callback = tf.keras.callbacks.ModelCheckpoint(filepath='./checkpoints',
                                                  save_weights_only=True,
                                                  verbose=1)
 warnings.filterwarnings(action='ignore', category=FutureWarning)
-model.fit(ds, epochs=int(args.epochs), batch_size=args.batchsize, callbacks=[LambdaCallback(on_epoch_end=lambda epoch: gen.on_epoch_end()), cp_callback])  # noqa
+model.fit(ds, epochs=int(args.epochs), batch_size=args.batchsize, callbacks=[LambdaCallback(on_epoch_end=lambda epoch, logs: gen.on_epoch_end()), cp_callback])  # noqa
 
