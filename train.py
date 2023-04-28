@@ -50,8 +50,8 @@ model = Kell2018(input_shape, wout_shape[0], gout_shape[0])
 model.compile(loss={'wout':Unconcerned_CCE(), 'gout':Unconcerned_CCE()},
               optimizer=Adam(learning_rate=float(args.lr)),
               metrics={
-                  'wout': [CategoricalAccuracy(), UnconcernedAccuracy()],
-                  'gout': [CategoricalAccuracy(), UnconcernedAccuracy()]},
+                  'wout': [UnconcernedAccuracy()],
+                  'gout': [UnconcernedAccuracy()]},
               run_eagerly=True
               )
 print(model.summary())
