@@ -16,6 +16,7 @@ parser.add_argument('-g', '--gtzanpath', help='Path to folder with GTZAN dataset
 parser.add_argument('-b', '--batchsize')
 parser.add_argument('-e', '--epochs')
 parser.add_argument('--lr', default=1e-3)
+parser.add_argument('--cppath', default='./cp.ckpt')
 parser.add_argument('--quiet', action='store_true', help='Silences the mid-training messages')
 
 
@@ -48,14 +49,17 @@ ds = tf.data.Dataset.from_generator(gen,
 model = Kell2018(input_shape, wout_shape[0], gout_shape[0])
 model.compile(loss={'wout':Unconcerned_CCE(), 'gout':Unconcerned_CCE()},
               optimizer=Adam(learning_rate=float(args.lr)),
-              metrics={'wout': [CategoricalAccuracy(), TopKCategoricalAccuracy(k=5)], 'gout': [CategoricalAccuracy(), TopKCategoricalAccuracy(k=2)]},
+              metrics={
+                  'wout': [CategoricalAccuracy(), UnconcernedAccuracy()],
+                  'gout': [CategoricalAccuracy(), UnconcernedAccuracy()]},
               run_eagerly=True
               )
 print(model.summary())
 ds = ds.apply(tf.data.experimental.assert_cardinality(len(gen)))
 cp_callback = tf.keras.callbacks.ModelCheckpoint(filepath='./checkpoints',
                                                  save_weights_only=True,
-                                                 verbose=1)
+                                                 verbose=0,
+                                                 )
 log_dir = "logs/fit/" + datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
 tensorboard_callback = tf.keras.callbacks.TensorBoard(log_dir=log_dir, histogram_freq=1)
 warnings.filterwarnings(action='ignore', category=FutureWarning)

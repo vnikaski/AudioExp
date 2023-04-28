@@ -1,6 +1,6 @@
 import tensorflow as tf
 import keras.applications
-from keras.layers import Conv2D, AvgPool2D, MaxPool2D, Dense, Lambda, Flatten, Input
+from keras.layers import Conv2D, AvgPool2D, MaxPool2D, Dense, Layer, Lambda, Flatten, Input
 
 
 def Kell2018(input_shape, wout_shape, gout_shape):
@@ -66,3 +66,28 @@ def Kell2018small(input_shape, wout_shape, gout_shape):
     model.output_names = ['wout', 'gout']
 
     return model
+
+
+class Patches(Layer):
+    def __init__(self, patch_size):
+        super().__init__()
+        self.patch_size=patch_size
+
+    def call(self, images):
+        batch_size = tf.shape(images)[0]
+        patches = tf.image.extract_patches(
+            images=images,
+            sizes=[1, self.patch_size, self.patch_size, 1],
+            strides=[1, self.patch_size, self.patch_size, 1], # no overlap?
+            rates=[1,1,1,1],
+            padding='VALID'
+        )
+        patch_dims = patches.shape[-1]
+        patches = tf.reshape(patch_dims, [batch_size, -1, patch_dims])
+        return patches
+
+class PatchEncoder(Layer):
+    def __init__(self, num_patches, projection_dim):
+        super().__init__()
+        self.num_patches = num_patches
+        self.projection = Dense(units=projection_dim)
