@@ -7,6 +7,7 @@ import warnings, sys, argparse
 from keras.optimizers import Adam
 from keras.callbacks import LambdaCallback
 from utils.metrics import UnconcernedAccuracy
+import datetime
 
 parser = argparse.ArgumentParser()
 
@@ -29,7 +30,7 @@ gen = TTSGenre(libri_path=args.libripath,
                )
 
 xs, ys = gen.get_sample()
-print(xs.shape)
+print(f'input shape: {xs.shape[1:]}')
 input_shape = xs.shape[1:]
 wout_shape = ys['wout'].shape[1:]
 gout_shape = ys['gout'].shape[1:]
@@ -55,6 +56,13 @@ ds = ds.apply(tf.data.experimental.assert_cardinality(len(gen)))
 cp_callback = tf.keras.callbacks.ModelCheckpoint(filepath='./checkpoints',
                                                  save_weights_only=True,
                                                  verbose=1)
+log_dir = "logs/fit/" + datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
+tensorboard_callback = tf.keras.callbacks.TensorBoard(log_dir=log_dir, histogram_freq=1)
 warnings.filterwarnings(action='ignore', category=FutureWarning)
-model.fit(ds, epochs=int(args.epochs), batch_size=args.batchsize, callbacks=[LambdaCallback(on_epoch_end=lambda epoch, logs: gen.on_epoch_end()), cp_callback])  # noqa
+model.fit(ds,
+          epochs=int(args.epochs),
+          batch_size=args.batchsize,
+          callbacks=[LambdaCallback(on_epoch_end=lambda epoch, logs: gen.on_epoch_end()),
+                     cp_callback,
+                     tensorboard_callback])  # noqa
 

@@ -55,7 +55,6 @@ class TTSGenre(keras.utils.Sequence):
         return keras.backend.variable(X), {'wout': wout, 'gout': gout}
 
     def on_epoch_end(self):
-        print('actually doing on epochs end')
         self.libriGen.on_epoch_end()
         self.gtzanGen.on_epoch_end()
 
