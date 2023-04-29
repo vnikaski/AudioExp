@@ -1,6 +1,6 @@
 import tensorflow as tf
 import keras.applications
-from keras.layers import Conv2D, AvgPool2D, MaxPool2D, Dense, Layer, Lambda, Flatten, Input
+from keras.layers import Conv2D, Embedding, AvgPool2D, Dropout, MaxPool2D, Dense, Layer, Lambda, Flatten, Input
 
 
 def Kell2018(input_shape, wout_shape, gout_shape):
@@ -19,7 +19,9 @@ def Kell2018(input_shape, wout_shape, gout_shape):
     x_w = Conv2D(filters=512, kernel_size=3, strides=1, activation='relu')(x_w)
     x_w = AvgPool2D(pool_size=(3,3), strides=2)(x_w)
     x_w = Flatten()(x_w)
+    x_w = Dropout(0.1)(x_w)
     x_w = Dense(4096, activation='relu')(x_w)
+    x_w = Dropout(0.5)(x_w)
     wout = Dense(wout_shape, activation='softmax')(x_w)
 
     # genre branch
@@ -27,7 +29,9 @@ def Kell2018(input_shape, wout_shape, gout_shape):
     x_g = Conv2D(filters=512, kernel_size=3, strides=1, activation='relu')(x_g)
     x_g = AvgPool2D(pool_size=(3,3), strides=2)(x_g)
     x_g = Flatten()(x_g)
+    x_g = Dropout(0.1)(x_g)
     x_g = Dense(4096, activation='relu')(x_g)
+    x_g = Dropout(0.5)(x_g)
     gout = Dense(gout_shape, activation='softmax')(x_g)
 
     model = keras.Model(inp, [wout, gout])
@@ -91,3 +95,13 @@ class PatchEncoder(Layer):
         super().__init__()
         self.num_patches = num_patches
         self.projection = Dense(units=projection_dim)
+        self.position_embedding = Embedding(
+            input_dim=num_patches, output_dim=projection_dim
+        )
+
+    def call(self, patch, *args, **kwargs):
+        positions = tf.range(start=0, limit=self.num_patches, delta=1)
+        encoded = self.projection(patch) + self.position_embedding(positions)
+        return encoded
+
+
