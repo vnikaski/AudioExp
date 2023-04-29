@@ -104,6 +104,7 @@ else:
 
 tensorboard_callback = tf.keras.callbacks.TensorBoard(log_dir=log_dir, histogram_freq=1)
 warnings.filterwarnings(action='ignore', category=FutureWarning)
+warnings.filterwarnings(action='ignore', category=UserWarning)
 model.fit(
     train_ds,
     validation_data=val_ds,
