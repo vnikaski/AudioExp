@@ -9,7 +9,7 @@ import stopit
 
 class GTZAN(keras.utils.Sequence):
     def __init__(self, data_path, mode='train', batch_size=32, shuffle=True, window_s=1, sr=22050, n_mels=512, n_fft=2048, hop=44, quiet=False):
-        print('initialising GTZAN generator...')
+        print(f'initialising {mode} GTZAN generator...')
         self.data_path = data_path
         self.batch_size = batch_size
         self.shuffle = shuffle

@@ -8,7 +8,7 @@ import stopit
 
 class LibriTTSClean(keras.utils.Sequence):
     def __init__(self, data_path, mode='train', words=200, batch_size=32, shuffle=True, window_s=1, which_word=2, sr=24000, n_mels=512, n_fft=2048, hop=44, quiet=False):
-        print('initialising Libri generator...')
+        print(f'initialising {mode} Libri generator...')
         self.data_path = data_path
         self.batch_size = batch_size
         self.shuffle = shuffle

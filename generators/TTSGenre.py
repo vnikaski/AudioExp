@@ -54,6 +54,9 @@ class TTSGenre(keras.utils.Sequence):
         gout = tf.constant(gout)
         return keras.backend.variable(X), {'wout': wout, 'gout': gout}
 
+    def get_words(self):
+        return self.libriGen.words
+
     def on_epoch_end(self):
         self.libriGen.on_epoch_end()
         self.gtzanGen.on_epoch_end()
