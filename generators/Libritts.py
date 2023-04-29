@@ -66,7 +66,9 @@ class LibriTTSClean(keras.utils.Sequence):
         self.index['word'] = self.index[f'word{which_word}']
         self.index = self.index[['fname', 'word']]
 
-        if type(words) is int:
+        try:
+            len(words)
+        except:
             words = list(self.index['word'].value_counts()[:words].index)
 
         self.words = np.asarray(words)
