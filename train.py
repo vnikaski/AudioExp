@@ -98,7 +98,7 @@ cp_callback = tf.keras.callbacks.ModelCheckpoint(filepath=args.cppath,
                                                  )
 
 if args.logdir is None:
-    log_dir = "logs/fit/" + f"m{args.nmels}f{args.nfft}w{args.window}n{args.words}ww{args.whichword}_" + datetime.datetime.now().strftime("%m%d-%H%M")
+    log_dir = "logs/fit/" + f"l{args.lr}m{args.nmels}f{args.nfft}w{args.window}n{args.words}ww{args.whichword}_" + datetime.datetime.now().strftime("%m%d-%H%M")
 else:
     log_dir = args.logdir
 
