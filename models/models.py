@@ -1,7 +1,7 @@
 import tensorflow as tf
 import keras.applications
-from keras.layers import Conv2D, Embedding, AvgPool2D, Dropout, MaxPool2D, Dense, Layer, Lambda, Flatten, Input
-
+from keras.layers import Conv2D, Embedding, AvgPool2D, Dropout, Reshape, Permute, Add, MultiHeadAttention, MaxPool2D, Dense, Layer, Lambda, Flatten, Input, LayerNormalization
+import keras.backend as K
 
 def Kell2018(input_shape, wout_shape, gout_shape):
     # shared pathway
@@ -71,13 +71,12 @@ def Kell2018small(input_shape, wout_shape, gout_shape):
 
     return model
 
-
 class Patches(Layer):
     def __init__(self, patch_size):
         super().__init__()
         self.patch_size=patch_size
 
-    def call(self, images):
+    def call(self, images, *args, **kwargs):
         batch_size = tf.shape(images)[0]
         patches = tf.image.extract_patches(
             images=images,
@@ -90,18 +89,132 @@ class Patches(Layer):
         patches = tf.reshape(patch_dims, [batch_size, -1, patch_dims])
         return patches
 
+    def get_config(self):
+        config = super().get_config()
+        config.update({
+            'patch-size': self.patch_size,
+        })
+
+
 class PatchEncoder(Layer):
     def __init__(self, num_patches, projection_dim):
         super().__init__()
         self.num_patches = num_patches
+        self.d = projection_dim
+
         self.projection = Dense(units=projection_dim)
         self.position_embedding = Embedding(
             input_dim=num_patches, output_dim=projection_dim
         )
 
     def call(self, patch, *args, **kwargs):
-        positions = tf.range(start=0, limit=self.num_patches, delta=1)
+        positions = tf.range(start=1, limit=self.num_patches+1, delta=1) # 0 reserved for CLS token
         encoded = self.projection(patch) + self.position_embedding(positions)
         return encoded
+
+    def get_config(self):
+        config = super().get_config()
+        config.update({
+            'num-patches': self.num_patches,
+            'd': self.d
+        })
+
+
+class PatchEmbed(Layer):
+    def __init__(self, img_size, patch_size, in_chans, embed_dim):
+        super(PatchEmbed, self).__init__()
+
+        self.img_size = img_size
+        self.patch_size = patch_size
+        self.num_patches = (img_size[1] // patch_size[1]) * (img_size[0] // patch_size[0])
+        self.proj = Conv2D(embed_dim, kernel_size=patch_size, strides=patch_size, input_shape=(*img_size, in_chans))
+        self.reshape = Reshape(self.num_patches, embed_dim)
+        self.permute = Permute((2,1))
+
+    def call(self, x, *args, **kwargs):
+        x = self.proj(x) # (batch, patch_pos1, patch_pos2, embed_dim)
+        x = self.reshape(x) # (batch, num_patches, embed_dim)
+        x = self.permute(x) # (batch, embed_dim, num_patches)
+        return x
+
+
+class MLP(Layer):
+    def __init__(self, units, rate):
+        super(MLP, self).__init__()
+        self.units = units
+        self.rate = rate
+        self.layers = [[Dense(unit, activation='gelu'), Dropout(rate)] for unit in units]
+
+    def call(self, x, *args, **kwargs):
+        for layers in self.layers:
+            for layer in layers:
+                x = layer(x)
+        return x
+
+    def get_config(self):
+        config = super().get_config()
+        config.update({
+            'units': self.units,
+            'rate': self.rate
+        })
+        return config
+
+
+
+class Transformer(Layer):
+    def __int__(self, L, num_heads, key_dims, hidden_units):
+        super(Transformer, self).__init__()
+        self.L = L
+        self.heads = num_heads
+        self.key_dims = key_dims
+        self.hidden_units = hidden_units
+
+        self.norm = LayerNormalization(epsilon=1e-6)
+        self.MHA = MultiHeadAttention(num_heads=num_heads, key_dim=key_dims, dropout=0.1)
+        self.net = MLP(units=hidden_units, rate=0.1)
+        self.add = Add()
+
+    def call(self, X, *args, **kwargs):
+        inputs = X
+        x = X
+        for _ in range(self.L):
+            x = self.norm(x)
+            x = self.MHA(x,x)
+            y = self.add([x, inputs])
+            x = self.norm(y)
+            x = self.net(x)
+            x = self.add([x,y])
+        return x
+
+    def get_config(self):
+        config = super().get_config()
+        config.update({
+            'L': self.L,
+            'heads': self.heads,
+            'key_dims': self.key_dims,
+            'hidden_units': self.hidden_units
+        })
+        return config
+
+def ASTClassifier(input_shape, patch_size, projection_dims, num_heads, hidden_units, n_transformer_layers, mlp_head_units, n_classes):
+    # TODO: make patch_size tuple-compatible
+    num_patches = (input_shape[1] // patch_size[1]) * (input_shape[0] // patch_size[0])
+
+    inputs = Input(shape=input_shape)
+    x = Patches(patch_size=patch_size)(inputs)
+    x = PatchEncoder(num_patches=num_patches, projection_dim=projection_dims)(x)
+    # x = PatchEmbed(input_shape[:2], embed_dim=projection_dims, patch_size=patch_size, in_chans=input_shape[-1])
+    for _ in range(n_transformer_layers):
+        x = Transformer(L=8, num_heads=num_heads, key_dims=projection_dims, hidden_units=hidden_units)(x)
+    representation = LayerNormalization(epsilon=1e-6)(x)
+    representation = Flatten()(representation)
+    representation = Dropout(0.5)(representation)
+
+    features = MLP(mlp_head_units, rate=0.5)(representation)
+    outputs = Dense(n_classes)(features)
+
+    model = keras.Model(inputs=inputs, outputs=outputs)
+    return model
+
 
 
