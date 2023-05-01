@@ -1,6 +1,6 @@
 import tensorflow as tf
 import keras.applications
-from keras.layers import Conv2D, Embedding, AvgPool2D, Dropout, Reshape, Permute, Add, MultiHeadAttention, MaxPool2D, Dense, Layer, Lambda, Flatten, Input, LayerNormalization
+from keras.layers import Conv2D, Embedding, RepeatVector, AvgPool2D, Dropout, Concatenate, Reshape, Permute, Add, MultiHeadAttention, MaxPool2D, Dense, Layer, Lambda, Flatten, Input, LayerNormalization
 import keras.backend as K
 
 def Kell2018(input_shape, wout_shape, gout_shape):
@@ -72,16 +72,17 @@ def Kell2018small(input_shape, wout_shape, gout_shape):
     return model
 
 class Patches(Layer):
-    def __init__(self, patch_size):
+    def __init__(self, patch_size, overlap):
         super().__init__()
-        self.patch_size=patch_size
+        self.patch_size = patch_size
+        self.overlap = overlap
 
     def call(self, images, *args, **kwargs):
         batch_size = tf.shape(images)[0]
         patches = tf.image.extract_patches(
             images=images,
-            sizes=[1, self.patch_size, self.patch_size, 1],
-            strides=[1, self.patch_size, self.patch_size, 1], # no overlap?
+            sizes=[1, self.patch_size[0], self.patch_size[1], 1],
+            strides=[1, self.patch_size[0]-self.overlap[0], self.patch_size[1]-self.overlap[1], 1], # no overlap?
             rates=[1,1,1,1],
             padding='VALID'
         )
@@ -137,6 +138,30 @@ class PatchEmbed(Layer):
         x = self.permute(x) # (batch, embed_dim, num_patches)
         return x
 
+class CLSConcat(Layer):
+    def __init__(self, dim):
+        super().__init__()
+        self.dim = dim
+        self.concat = Concatenate(axis=1)
+
+    def build(self, input_shape):
+        self.cls = self.add_weight(name='cls',
+                                   shape=(1,1,self.dim),
+                                   initializer='normal',
+                                   trainable=True)
+        assert self.dim == input_shape[-1]
+        super(CLSConcat, self).build(input_shape)
+
+    def call(self, inputs, *args, **kwargs):
+        batch_size = tf.shape(inputs)[0]
+        cls_batch = K.tile(x=self.cls, n=(batch_size, 1, 1))
+        return self.concat([cls_batch, inputs])
+
+    def compute_output_shape(self, input_shape):
+        return (input_shape[0], input_shape[1] + 1, self.dim)
+
+
+
 
 class MLP(Layer):
     def __init__(self, units, rate):
@@ -160,30 +185,27 @@ class MLP(Layer):
         return config
 
 
-
 class Transformer(Layer):
-    def __int__(self, L, num_heads, key_dims, hidden_units):
-        super(Transformer, self).__init__()
-        self.L = L
+    def __init__(self, num_heads, key_dims, hidden_units):
+        super().__init__()
         self.heads = num_heads
         self.key_dims = key_dims
         self.hidden_units = hidden_units
 
         self.norm = LayerNormalization(epsilon=1e-6)
         self.MHA = MultiHeadAttention(num_heads=num_heads, key_dim=key_dims, dropout=0.1)
-        self.net = MLP(units=hidden_units, rate=0.1)
+        self.mlp = MLP(units=[hidden_units], rate=0.1)
         self.add = Add()
 
     def call(self, X, *args, **kwargs):
         inputs = X
         x = X
-        for _ in range(self.L):
-            x = self.norm(x)
-            x = self.MHA(x,x)
-            y = self.add([x, inputs])
-            x = self.norm(y)
-            x = self.net(x)
-            x = self.add([x,y])
+        x = self.norm(x)
+        x = self.MHA(x,x)
+        y = self.add([x, inputs])
+        x = self.norm(y)
+        x = self.mlp(x)
+        x = self.add([x,y])
         return x
 
     def get_config(self):
@@ -196,24 +218,29 @@ class Transformer(Layer):
         })
         return config
 
-def ASTClassifier(input_shape, patch_size, projection_dims, num_heads, hidden_units, n_transformer_layers, mlp_head_units, n_classes):
-    # TODO: make patch_size tuple-compatible
-    num_patches = (input_shape[1] // patch_size[1]) * (input_shape[0] // patch_size[0])
+def ASTClassifierConnected(input_shape, patch_size, overlap, projection_dims, num_heads, hidden_units, n_transformer_layers, mlp_head_units, wout_classes, gout_classes):
+    num_patches = (input_shape[1] // (patch_size[1]-overlap[1])) * (input_shape[0] // (patch_size[0]-overlap[0]))
 
     inputs = Input(shape=input_shape)
-    x = Patches(patch_size=patch_size)(inputs)
+    x = Patches(patch_size=patch_size,overlap=overlap)(inputs)
     x = PatchEncoder(num_patches=num_patches, projection_dim=projection_dims)(x)
+    x = CLSConcat(dim=projection_dims)(x)
     # x = PatchEmbed(input_shape[:2], embed_dim=projection_dims, patch_size=patch_size, in_chans=input_shape[-1])
-    for _ in range(n_transformer_layers):
-        x = Transformer(L=8, num_heads=num_heads, key_dims=projection_dims, hidden_units=hidden_units)(x)
+    for i in range(n_transformer_layers):
+        x = Transformer(num_heads=num_heads, key_dims=projection_dims, hidden_units=hidden_units)(x)
     representation = LayerNormalization(epsilon=1e-6)(x)
-    representation = Flatten()(representation)
-    representation = Dropout(0.5)(representation)
+    cls_out = representation[:,0,:]
+    cls_out = Flatten()(cls_out)
+    cls_out = Dropout(0.5)(cls_out)
+    # wout head
+    wout_features = MLP([mlp_head_units], rate=0.5)(cls_out)
+    wout = Dense(wout_classes, activation='softmax')(wout_features)
+    # gout head
+    gout_features = MLP([mlp_head_units], rate=0.5)(cls_out)
+    gout = Dense(gout_classes, activation='softmax')(gout_features)
 
-    features = MLP(mlp_head_units, rate=0.5)(representation)
-    outputs = Dense(n_classes)(features)
-
-    model = keras.Model(inputs=inputs, outputs=outputs)
+    model = keras.Model(inputs=inputs, outputs=[wout, gout])
+    model.output_names = ['wout', 'gout']
     return model
 
 

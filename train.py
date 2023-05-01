@@ -1,5 +1,5 @@
 from generators.TTSGenre import TTSGenre
-from models.models import Kell2018
+from models.models import Kell2018, Kell2018small, ASTClassifierConnected
 from utils.losses import Unconcerned_CCE
 from keras.metrics import TopKCategoricalAccuracy, CategoricalAccuracy
 import tensorflow as tf
@@ -25,6 +25,15 @@ parser.add_argument('--words', default=200)
 parser.add_argument('--whichword', default=2)
 parser.add_argument('--quiet', action='store_true', help='Silences the mid-training messages')
 parser.add_argument('--logdir', default=None)
+parser.add_argument('--model', choices=['kell', 'kellsmall', 'astcon'])
+parser.add_argument('--patchf', default=16)
+parser.add_argument('--patcht', default=16)
+parser.add_argument('--overf', default=6)
+parser.add_argument('--overt', default=6)
+parser.add_argument('--projdim', default=256)
+parser.add_argument('--hiddenu', default=256)
+parser.add_argument('--ntlayers', default=12)
+parser.add_argument('--mlpheadu', default=256)
 
 
 args = parser.parse_args()
@@ -79,12 +88,24 @@ val_ds = tf.data.Dataset.from_generator(
     output_signature=output_signature
 )
 
-model = Kell2018(input_shape, wout_shape[0], gout_shape[0])
-model.compile(loss={'wout':Unconcerned_CCE(), 'gout':Unconcerned_CCE()},
+
+if args.model == 'kell':
+    model = Kell2018(input_shape, wout_shape[0], gout_shape[0])
+elif args.model == 'kellsmall':
+    model = Kell2018small(input_shape, wout_shape[0], gout_shape[0])
+elif args.model == 'astcon':
+    model = ASTClassifierConnected(
+
+    )
+else:
+    raise ValueError(f'model {args.model} not supported')
+
+model.compile(loss={'wout': Unconcerned_CCE(), 'gout': Unconcerned_CCE()},
               optimizer=Adam(learning_rate=float(args.lr)),
               metrics={
                   'wout': [UnconcernedAccuracy()],
-                  'gout': [UnconcernedAccuracy()]},
+                  'gout': [UnconcernedAccuracy()]
+              },
               run_eagerly=True
               )
 print(model.summary())
