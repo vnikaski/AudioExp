@@ -99,7 +99,7 @@ elif args.model == 'astcon':
         input_shape=input_shape,
         patch_size=(args.patchf, args.patcht),
         overlap=(args.overf, args.overt),
-        projection_dims=args.projdims,
+        projection_dims=args.projdim,
         num_heads=args.numheads,
         hidden_units=args.hiddenu,
         n_transformer_layers=args.ntlayers,
@@ -129,7 +129,7 @@ cp_callback = tf.keras.callbacks.ModelCheckpoint(filepath=args.cppath,
                                                  )
 
 if args.logdir is None:
-    log_dir = "logs/fit/" + f"l{args.lr}m{args.nmels}f{args.nfft}w{args.window}n{args.words}ww{args.whichword}_" + datetime.datetime.now().strftime("%m%d-%H%M")
+    log_dir = "logs/fit/" + f"{args.model}l{args.lr}m{args.nmels}f{args.nfft}w{args.window}n{args.words}ww{args.whichword}_" + datetime.datetime.now().strftime("%m%d-%H%M")
 else:
     log_dir = args.logdir
 
