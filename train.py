@@ -31,6 +31,7 @@ parser.add_argument('--patcht', default=16)
 parser.add_argument('--overf', default=6)
 parser.add_argument('--overt', default=6)
 parser.add_argument('--projdim', default=256)
+parser.add_argument('--numheads', default=12)
 parser.add_argument('--hiddenu', default=256)
 parser.add_argument('--ntlayers', default=12)
 parser.add_argument('--mlpheadu', default=256)
@@ -95,7 +96,16 @@ elif args.model == 'kellsmall':
     model = Kell2018small(input_shape, wout_shape[0], gout_shape[0])
 elif args.model == 'astcon':
     model = ASTClassifierConnected(
-
+        input_shape=input_shape,
+        patch_size=(args.patchf, args.patcht),
+        overlap=(args.overlapf, args.overlapt),
+        projection_dims=args.projdims,
+        num_heads=args.numheads,
+        hidden_units=args.hiddenu,
+        n_transformer_layers=args.ntlayers,
+        mlp_head_units=args.mlpheadu,
+        wout_classes=wout_shape[0],
+        gout_classes=gout_shape[0]
     )
 else:
     raise ValueError(f'model {args.model} not supported')
