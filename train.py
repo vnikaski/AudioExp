@@ -97,13 +97,13 @@ elif args.model == 'kellsmall':
 elif args.model == 'astcon':
     model = ASTClassifierConnected(
         input_shape=input_shape,
-        patch_size=(args.patchf, args.patcht),
-        overlap=(args.overf, args.overt),
-        projection_dims=args.projdim,
-        num_heads=args.numheads,
-        hidden_units=args.hiddenu,
-        n_transformer_layers=args.ntlayers,
-        mlp_head_units=args.mlpheadu,
+        patch_size=(int(args.patchf), int(args.patcht)),
+        overlap=(int(args.overf), int(args.overt)),
+        projection_dims=int(args.projdim),
+        num_heads=int(args.numheads),
+        hidden_units=int(args.hiddenu),
+        n_transformer_layers=int(args.ntlayers),
+        mlp_head_units=int(args.mlpheadu),
         wout_classes=wout_shape[0],
         gout_classes=gout_shape[0]
     )

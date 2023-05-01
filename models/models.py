@@ -78,7 +78,6 @@ class Patches(Layer):
         self.overlap = overlap
 
     def call(self, images, *args, **kwargs):
-        print(images.shape)
         batch_size = tf.shape(images)[0]
         patches = tf.image.extract_patches(
             images=images,
@@ -87,7 +86,6 @@ class Patches(Layer):
             rates=[1,1,1,1],
             padding='VALID'
         )
-        print(patches.shape)
         patch_dims = patches.shape[-1]
         patches = tf.reshape(patches, [batch_size, -1, patch_dims])
         return patches
