@@ -98,7 +98,7 @@ elif args.model == 'astcon':
     model = ASTClassifierConnected(
         input_shape=input_shape,
         patch_size=(args.patchf, args.patcht),
-        overlap=(args.overlapf, args.overlapt),
+        overlap=(args.overf, args.overt),
         projection_dims=args.projdims,
         num_heads=args.numheads,
         hidden_units=args.hiddenu,
