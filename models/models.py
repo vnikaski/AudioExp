@@ -78,6 +78,7 @@ class Patches(Layer):
         self.overlap = overlap
 
     def call(self, images, *args, **kwargs):
+        print(images.shape)
         batch_size = tf.shape(images)[0]
         patches = tf.image.extract_patches(
             images=images,
@@ -86,8 +87,9 @@ class Patches(Layer):
             rates=[1,1,1,1],
             padding='VALID'
         )
+        print(patches.shape)
         patch_dims = patches.shape[-1]
-        patches = tf.reshape(patch_dims, [batch_size, -1, patch_dims])
+        patches = tf.reshape(patches, [batch_size, -1, patch_dims])
         return patches
 
     def get_config(self):
@@ -219,7 +221,7 @@ class Transformer(Layer):
         return config
 
 def ASTClassifierConnected(input_shape, patch_size, overlap, projection_dims, num_heads, hidden_units, n_transformer_layers, mlp_head_units, wout_classes, gout_classes):
-    num_patches = (input_shape[1] // (patch_size[1]-overlap[1])) * (input_shape[0] // (patch_size[0]-overlap[0]))
+    num_patches = ((input_shape[1]-overlap[1]) // (patch_size[1]-overlap[1])) * ((input_shape[0]-overlap[0]) // (patch_size[0]-overlap[0]))
 
     inputs = Input(shape=input_shape)
     x = Patches(patch_size=patch_size,overlap=overlap)(inputs)
