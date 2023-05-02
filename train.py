@@ -35,6 +35,10 @@ parser.add_argument('--numheads', default=12)
 parser.add_argument('--hiddenu', default=256)
 parser.add_argument('--ntlayers', default=12)
 parser.add_argument('--mlpheadu', default=256)
+parser.add_argument('--norm', choices=['smaple', 'batch', 'none'], default='sample')
+parser.add_argument('--augment', action='store_true')
+parser.add_argument('--urbanpath')
+
 
 
 args = parser.parse_args()
@@ -50,7 +54,10 @@ train_gen = TTSGenre(
     words=int(args.words),
     which_word=int(args.whichword),
     quiet=args.quiet,
-    mode='train'
+    mode='train',
+    augment=args.augment,
+    norm=args.norm,
+    urbanpath=args.urbanpath
 )
 
 val_gen = TTSGenre(
@@ -63,7 +70,9 @@ val_gen = TTSGenre(
     window_s=float(args.window),
     words=train_gen.get_words(),
     quiet=args.quiet,
-    mode='val'
+    mode='val',
+    augment=False,
+    norm=args.norm
 )
 
 xs, ys = train_gen.get_sample()

@@ -1,6 +1,7 @@
 import librosa
 import numpy as np
 from tensorflow import keras
+import tensorflow as tf
 import pandas as pd
 import os
 from preprocessing.spectrograms import get_mel_spectrogram
@@ -8,7 +9,7 @@ import stopit
 
 
 class GTZAN(keras.utils.Sequence):
-    def __init__(self, data_path, mode='train', batch_size=32, shuffle=True, window_s=1, sr=22050, n_mels=512, n_fft=2048, hop=44, quiet=False):
+    def __init__(self, data_path, mode='train', batch_size=32, shuffle=True, window_s=1, sr=22050, n_mels=512, n_fft=2048, hop=44, quiet=False, norm='sample'):
         print(f'initialising {mode} GTZAN generator...')
         self.data_path = data_path
         self.batch_size = batch_size
@@ -82,7 +83,14 @@ class GTZAN(keras.utils.Sequence):
                 wavf = librosa.util.pad_center(wavf, size=int(self.sr*self.window_s))
 
             spec = get_mel_spectrogram(wavf, self.sr, self.n_fft, self.hop, self.n_mels)
+
+            if self.norm == 'sample':
+                mean, var = tf.nn.moments(spec, axes=[0,1])
+                spec = (spec-mean)/tf.sqrt(var+1e-8)  # prevent 0 division
             X[i-batch_diff] = spec[:,:X.shape[2]].reshape(X.shape[1:])
             label = self.index.iloc[id]['label']
             y[i-batch_diff] = (label == self.classes).astype('int')
+        if self.norm == 'batch':
+            mean, var = tf.nn.moments(X, axes=[0,1,2,3])
+            X = (X-mean)/tf.sqrt(var+1e-8)
         return X, y

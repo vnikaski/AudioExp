@@ -7,7 +7,7 @@ from generators.Libritts import LibriTTSClean
 from generators.GTZAN import GTZAN
 
 class TTSGenre(keras.utils.Sequence):
-    def __init__(self, libri_path, gtzan_path, mode='train', batch_size=64, shuffle=True, window_s=1, sr=22050, n_mels=512, n_fft=2048, hop=44, words=200, which_word=2, quiet=False):
+    def __init__(self, libri_path, gtzan_path, mode='train', batch_size=64, shuffle=True, window_s=1, sr=22050, n_mels=512, n_fft=2048, hop=44, words=200, which_word=2, quiet=False, augment=True, norm='sample', urbanpath=None):
         self.libriGen = LibriTTSClean(data_path=libri_path,
                                       mode=mode,
                                       words=words,
@@ -19,7 +19,10 @@ class TTSGenre(keras.utils.Sequence):
                                       n_mels=n_mels,
                                       n_fft=n_fft,
                                       hop=hop,
-                                      quiet=quiet)
+                                      quiet=quiet,
+                                      norm=norm,
+                                      augment=augment,
+                                      urbanpath=urbanpath)
         self.gtzanGen = GTZAN(data_path=gtzan_path,
                               mode=mode,
                               batch_size=batch_size//2,
@@ -29,7 +32,8 @@ class TTSGenre(keras.utils.Sequence):
                               n_mels=n_mels,
                               n_fft=n_fft,
                               hop=hop,
-                              quiet=quiet)
+                              quiet=quiet,
+                              norm=norm)
     def __len__(self):
         return min(len(self.gtzanGen), len(self.libriGen))
 

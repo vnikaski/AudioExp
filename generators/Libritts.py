@@ -1,13 +1,17 @@
 import librosa
 import numpy as np
 from tensorflow import keras
+import tensorflow as tf
 import pandas as pd
 import os
 from preprocessing.spectrograms import get_mel_spectrogram
 import stopit
 
+NOISE_LVL = 0.5
+GET_WAV = False # for testing purposes
+
 class LibriTTSClean(keras.utils.Sequence):
-    def __init__(self, data_path, mode='train', words=200, batch_size=32, shuffle=True, window_s=1, which_word=2, sr=24000, n_mels=512, n_fft=2048, hop=44, quiet=False):
+    def __init__(self, data_path, mode='train', words=200, batch_size=32, shuffle=True, window_s=1, which_word=2, sr=24000, n_mels=512, n_fft=2048, hop=44, quiet=False, augment=True, norm='sample', urban_path=None):
         print(f'initialising {mode} Libri generator...')
         self.data_path = data_path
         self.batch_size = batch_size
@@ -18,6 +22,8 @@ class LibriTTSClean(keras.utils.Sequence):
         self.hop = hop
         self.window_s = window_s
         self.quiet = quiet
+        self.augment = augment
+        self.norm = norm
         self.mode = mode
         if self.mode == 'train':
             self.subset = 'train-clean-360'
@@ -28,6 +34,12 @@ class LibriTTSClean(keras.utils.Sequence):
         else:
             raise ValueError(f'Unsupported mode {self.mode}, try \'train\', \'val\' or \'test\'')
         self.data_path = os.path.join(self.data_path, self.subset+'/')
+
+        if self.augment:
+            if urban_path is None:
+                raise ValueError('please provide urban path with flag --urbanpath')
+            self.urban_index = pd.read_csv(os.path.join(urban_path, 'urban.index'))
+            self.urban_path = urban_path
 
         if not os.path.exists(self.data_path+self.subset+'.index'):
             index_df = pd.DataFrame(columns=['fname', 'word1', 'word2', 'word3'])
@@ -96,6 +108,7 @@ class LibriTTSClean(keras.utils.Sequence):
             np.random.shuffle(self.indices)
 
     def _data_generation(self, batch_ids):
+        # todo: change int(self.sr*self.window_s) to width
         width = int((self.sr * self.window_s)/self.hop)
         X = np.empty((len(batch_ids), self.n_mels, width, 1))
         y = np.empty((len(batch_ids), len(self.words)))
@@ -124,12 +137,29 @@ class LibriTTSClean(keras.utils.Sequence):
                 wavf = wavf[:int(self.sr*self.window_s)]
             else:
                 wavf = librosa.util.pad_center(wavf, size=int(self.sr*self.window_s))
+            if self.augment:
+                which = np.random.randint(0, len(self.urban_index)-1)
+                noise, _ = librosa.load(os.path.join(os.path.join(self.urban_path, 'audio'), self.urban_index['fname'][which]), sr=self.sr)
+                if len(noise) >= int(self.sr*self.window_s):
+                    begin = np.random.randint(0, len(noise)-int(self.sr*self.window_s)-1)
+                    noise = noise[begin: begin+int(self.sr*self.window_s)]
+                else:
+                    noise = librosa.util.pad_center(noise, size=int(self.sr*self.window_s))
+                noise *= NOISE_LVL
+                wavf += noise
+                if GET_WAV:
+                    return wavf, self.index.iloc[id]['word']
 
             spec = get_mel_spectrogram(wavf, self.sr, self.n_fft, self.hop, self.n_mels)
-
+            if self.norm == 'sample':
+                mean, var = tf.nn.moments(spec, axes=[0,1])
+                spec = (spec-mean)/tf.sqrt(var+1e-8)  # prevent 0 division
             X[i-batch_diff] = spec[:,:X.shape[2]].reshape(X.shape[1:])
             word = self.index.iloc[id]['word']
             y[i-batch_diff] = (word == self.words).astype('int')
+        if self.norm == 'batch':
+            mean, var = tf.nn.moments(X, axes=[0,1,2,3])
+            X = (X-mean)/tf.sqrt(var+1e-8)
         return X, y
 
 
