@@ -8,6 +8,7 @@ from keras.optimizers import Adam
 from keras.callbacks import LambdaCallback
 from utils.metrics import UnconcernedAccuracy
 import datetime
+import tensorflow_addons as tfa
 
 parser = argparse.ArgumentParser()
 
@@ -16,6 +17,8 @@ parser.add_argument('-g', '--gtzanpath', help='Path to folder with GTZAN dataset
 parser.add_argument('-b', '--batchsize', default=64)
 parser.add_argument('-e', '--epochs')
 parser.add_argument('--lr', default=1e-3)
+parser.add_argument('--glr', default=None)
+parser.add_argument('--wlr', default=None)
 parser.add_argument('--cppath', default='./cp.ckpt')
 parser.add_argument('--nmels', default=512)
 parser.add_argument('--nfft', default=2048)
@@ -57,7 +60,8 @@ train_gen = TTSGenre(
     mode='train',
     augment=args.augment,
     norm=args.norm,
-    urbanpath=args.urbanpath
+    urbanpath=args.urbanpath,
+    shuffle=True
 )
 
 val_gen = TTSGenre(
@@ -72,7 +76,8 @@ val_gen = TTSGenre(
     quiet=args.quiet,
     mode='val',
     augment=False,
-    norm=args.norm
+    norm=args.norm,
+    shuffle=True
 )
 
 xs, ys = train_gen.get_sample()
@@ -119,8 +124,30 @@ elif args.model == 'astcon':
 else:
     raise ValueError(f'model {args.model} not supported')
 
+glr = args.glr
+wlr = args.wlr
+
+if glr is None:
+    glr = args.lr
+if wlr is None:
+    wlr = args.wlr
+
+if args.model=='kell' or args.model=='kellsmall':
+    mutual = list(range(0, 8))
+    word = [8, 10, 12, 14, 16, 18, 20, 22]
+    genre = [9, 11, 13, 15, 17, 19, 21, 23]
+
+    optimizers_and_layers = [
+        (Adam(learning_rate=float(args.lr)), [model.layers[i] for i in mutual]),
+        (Adam(learning_rate=float(args.wlr)), [model.layers[i] for i in word]),
+        (Adam(learning_rate=float(args.glr)), [model.layers[i] for i in genre])
+    ]
+    optimizer = tfa.optimizers.MultiOptimizer(optimizers_and_layers)
+else:
+    optimizer = Adam(learning_rate=float(args.lr))
+
 model.compile(loss={'wout': Unconcerned_CCE(), 'gout': Unconcerned_CCE()},
-              optimizer=Adam(learning_rate=float(args.lr)),
+              optimizer=optimizer,
               metrics={
                   'wout': [UnconcernedAccuracy()],
                   'gout': [UnconcernedAccuracy()]
@@ -138,7 +165,7 @@ cp_callback = tf.keras.callbacks.ModelCheckpoint(filepath=args.cppath,
                                                  )
 
 if args.logdir is None:
-    log_dir = "logs/fit/" + f"{args.model}l{args.lr}m{args.nmels}f{args.nfft}w{args.window}n{args.words}ww{args.whichword}_" + datetime.datetime.now().strftime("%m%d-%H%M")
+    log_dir = "logs/fit/" + f"{args.model}l{args.lr}{args.wlr}{args.glr}m{args.nmels}f{args.nfft}w{args.window}n{args.words}ww{args.whichword}h{args.hop}_" + datetime.datetime.now().strftime("%m%d-%H%M")
 else:
     log_dir = args.logdir
 
