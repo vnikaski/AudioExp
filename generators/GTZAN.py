@@ -21,6 +21,7 @@ class GTZAN(keras.utils.Sequence):
         self.window_s = window_s
         self.quiet = quiet
         self.mode = mode
+        self.norm = norm
         self.index = pd.read_csv(os.path.join(self.data_path, 'gtzan.index'))
         self.index = self.index.loc[self.index['split']==self.mode]
         self.data_path = os.path.join(self.data_path, 'genres_original')
@@ -86,11 +87,11 @@ class GTZAN(keras.utils.Sequence):
 
             if self.norm == 'sample':
                 mean, var = tf.nn.moments(spec, axes=[0,1])
-                spec = (spec-mean)/tf.sqrt(var+1e-8)  # prevent 0 division
+                spec = (spec-mean.numpy())/np.sqrt(var.numpy()+1e-8)  # prevent 0 division
             X[i-batch_diff] = spec[:,:X.shape[2]].reshape(X.shape[1:])
             label = self.index.iloc[id]['label']
             y[i-batch_diff] = (label == self.classes).astype('int')
         if self.norm == 'batch':
             mean, var = tf.nn.moments(X, axes=[0,1,2,3])
-            X = (X-mean)/tf.sqrt(var+1e-8)
+            X = (X-mean.numpy())/tf.sqrt(var.numpy()+1e-8)
         return X, y

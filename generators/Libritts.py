@@ -153,13 +153,13 @@ class LibriTTSClean(keras.utils.Sequence):
             spec = get_mel_spectrogram(wavf, self.sr, self.n_fft, self.hop, self.n_mels)
             if self.norm == 'sample':
                 mean, var = tf.nn.moments(spec, axes=[0,1])
-                spec = (spec-mean)/tf.sqrt(var+1e-8)  # prevent 0 division
+                spec = (spec-mean.numpy())/np.sqrt(var.numpy()+1e-8)  # prevent 0 division
             X[i-batch_diff] = spec[:,:X.shape[2]].reshape(X.shape[1:])
             word = self.index.iloc[id]['word']
             y[i-batch_diff] = (word == self.words).astype('int')
         if self.norm == 'batch':
             mean, var = tf.nn.moments(X, axes=[0,1,2,3])
-            X = (X-mean)/tf.sqrt(var+1e-8)
+            X = (X-mean.numpy())/tf.sqrt(var.numpy()+1e-8)
         return X, y
 
 
