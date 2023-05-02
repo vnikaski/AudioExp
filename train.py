@@ -134,7 +134,7 @@ wlr = args.wlr
 if glr is None:
     glr = args.lr
 if wlr is None:
-    wlr = args.wlr
+    wlr = args.lr
 
 if args.model=='kell' or args.model=='kellsmall':
     mutual = list(range(0, 8))
