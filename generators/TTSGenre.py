@@ -22,7 +22,7 @@ class TTSGenre(keras.utils.Sequence):
                                       quiet=quiet,
                                       norm=norm,
                                       augment=augment,
-                                      urbanpath=urbanpath)
+                                      urban_path=urbanpath)
         self.gtzanGen = GTZAN(data_path=gtzan_path,
                               mode=mode,
                               batch_size=batch_size//2,
