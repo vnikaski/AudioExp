@@ -19,6 +19,8 @@ parser.add_argument('-e', '--epochs')
 parser.add_argument('--lr', default=1e-3)
 parser.add_argument('--glr', default=None)
 parser.add_argument('--wlr', default=None)
+parser.add_argument('--wbatch', default=None)
+parser.add_argument('--gbatch', default=None)
 parser.add_argument('--cppath', default='./cp.ckpt')
 parser.add_argument('--nmels', default=512)
 parser.add_argument('--nfft', default=2048)
@@ -61,7 +63,9 @@ train_gen = TTSGenre(
     augment=args.augment,
     norm=args.norm,
     urbanpath=args.urbanpath,
-    shuffle=True
+    shuffle=True,
+    wbatch = int(args.wbatch),
+    gbatch = int(args.gbatch)
 )
 
 val_gen = TTSGenre(
