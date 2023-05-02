@@ -143,8 +143,8 @@ if args.model=='kell' or args.model=='kellsmall':
 
     optimizers_and_layers = [
         (Adam(learning_rate=float(args.lr)), [model.layers[i] for i in mutual]),
-        (Adam(learning_rate=float(args.wlr)), [model.layers[i] for i in word]),
-        (Adam(learning_rate=float(args.glr)), [model.layers[i] for i in genre])
+        (Adam(learning_rate=float(wlr)), [model.layers[i] for i in word]),
+        (Adam(learning_rate=float(glr)), [model.layers[i] for i in genre])
     ]
     optimizer = tfa.optimizers.MultiOptimizer(optimizers_and_layers)
 else:
