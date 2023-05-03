@@ -163,7 +163,7 @@ print(model.summary())
 train_ds = train_ds.apply(tf.data.experimental.assert_cardinality(len(train_gen)))
 val_ds = val_ds.apply(tf.data.experimental.assert_cardinality(len(val_gen)))
 
-cp_callback = tf.keras.callbacks.ModelCheckpoint(filepath=args.cppath,
+cp_callback = tf.keras.callbacks.ModelCheckpoint(filepath=f"{args.model}l{args.lr}{args.wlr}{args.glr}m{args.nmels}f{args.nfft}w{args.window}n{args.words}ww{args.whichword}h{args.hop}_" + datetime.datetime.now().strftime("%m%d-%H%M") + args.cppath,
                                                  save_weights_only=True,
                                                  verbose=0,
                                                  )
