@@ -2,21 +2,22 @@ import tensorflow as tf
 import keras.applications
 from keras.layers import Conv2D, Embedding, RepeatVector, AvgPool2D, Dropout, Concatenate, Reshape, Permute, Add, MultiHeadAttention, MaxPool2D, Dense, Layer, Lambda, Flatten, Input, LayerNormalization
 import keras.backend as K
+import numpy as np
 
-def Kell2018(input_shape, wout_shape, gout_shape):
+def Kell2018(input_shape, wout_shape, gout_shape, pretrained=True):
     # shared pathway
     inp = Input(input_shape)
-    x = Conv2D(filters=96, kernel_size=9, strides=3, input_shape=input_shape, activation='relu', name='Conv1')(inp)
+    x = Conv2D(filters=96, kernel_size=9, strides=3, input_shape=input_shape, activation='relu', name='conv1')(inp)
     x = MaxPool2D(pool_size=(3,3), strides=2, name='MaxPool1')(x)
     x = Lambda(tf.nn.local_response_normalization, name='LRN1')(x)
-    x = Conv2D(filters=256, kernel_size=5, strides=2, activation='relu', name='Conv2')(x)
+    x = Conv2D(filters=256, kernel_size=5, strides=2, activation='relu', name='conv2')(x)
     x = MaxPool2D(pool_size=(3,3), strides=2, name='MaxPool2')(x)
     x = Lambda(tf.nn.local_response_normalization, name='LRN2')(x)
-    x = Conv2D(filters=512, kernel_size=3, strides=1, activation='relu', name='Conv3')(x)
+    x = Conv2D(filters=512, kernel_size=3, strides=1, activation='relu', name='conv3')(x)
 
     # word branch
-    x_w = Conv2D(filters=1024, kernel_size=3, strides=1, activation='relu', name='WConv1')(x)
-    x_w = Conv2D(filters=512, kernel_size=3, strides=1, activation='relu', name='WConv2')(x_w)
+    x_w = Conv2D(filters=1024, kernel_size=3, strides=1, activation='relu', name='conv4_W')(x)
+    x_w = Conv2D(filters=512, kernel_size=3, strides=1, activation='relu', name='conv5_W')(x_w)
     x_w = AvgPool2D(pool_size=(3,3), strides=2, name='WAvgPool1')(x_w)
     x_w = Flatten(name='WFlatten')(x_w)
     x_w = Dropout(0.1, name='WDrop1')(x_w)
@@ -25,8 +26,8 @@ def Kell2018(input_shape, wout_shape, gout_shape):
     wout = Dense(wout_shape, activation='softmax', name='WDense2')(x_w)
 
     # genre branch
-    x_g = Conv2D(filters=1024, kernel_size=3, strides=1, activation='relu', name='GConv1')(x)
-    x_g = Conv2D(filters=512, kernel_size=3, strides=1, activation='relu', name='GConv2')(x_g)
+    x_g = Conv2D(filters=1024, kernel_size=3, strides=1, activation='relu', name='conv4_G')(x)
+    x_g = Conv2D(filters=512, kernel_size=3, strides=1, activation='relu', name='conv5_G')(x_g)
     x_g = AvgPool2D(pool_size=(3,3), strides=2, name='GAvgPool1')(x_g)
     x_g = Flatten(name='GFlatten')(x_g)
     x_g = Dropout(0.1, name='GDrop1')(x_g)
@@ -37,6 +38,14 @@ def Kell2018(input_shape, wout_shape, gout_shape):
     model = keras.Model(inp, [wout, gout])
     model.output_names = ['wout', 'gout']
 
+    if pretrained==True:
+        weights = np.load('network_weights_early_layers.npy', allow_pickle=True, encoding='latin1') # https://github.com/mcdermottLab/kelletal2018/blob/master/network/weights/network_weights_early_layers.npy
+        weights = weights.item()
+        for lname in list(weights.keys()):
+            model.get_layer(lname).set_weights([
+                weights[lname]['W'],
+                weights[lname]['b']
+            ])
     return model
 
 def Kell2018small(input_shape, wout_shape, gout_shape):
