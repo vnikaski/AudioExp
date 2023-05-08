@@ -11,7 +11,7 @@ NOISE_LVL = 0.5
 GET_WAV = False # for testing purposes
 
 class LibriTTSClean(keras.utils.Sequence):
-    def __init__(self, data_path, mode='train', words=200, batch_size=32, shuffle=True, window_s=1, which_word=2, sr=24000, n_mels=512, n_fft=2048, hop=44, quiet=False, augment=True, norm='sample', urban_path=None):
+    def __init__(self, data_path, mode='train', words=200, batch_size=32, shuffle=True, window_s=1, which_word=2, sr=24000, n_mels=512, n_fft=2048, hop=44, quiet=False, augment=True, norm='sample', urban_path=None, extend=True):
         print(f'initialising {mode} Libri generator...')
         self.data_path = data_path
         self.batch_size = batch_size
@@ -85,6 +85,19 @@ class LibriTTSClean(keras.utils.Sequence):
 
         self.words = np.asarray(words)
         self.index = self.index[self.index['word'].isin(words)].reset_index(drop=True)
+
+        print(f"maximal word presence before extension: {self.index.value_counts('word').values[0]}")
+        print(f"minimal word presence before extension: {self.index.value_counts('word').values[-1]}")
+
+        if extend and mode=='train': # todo: think how it should look, this is just a temporary fix
+            target = self.index.value_counts('word').values[0]
+            for word in words:
+                focus = self.index[self.index['word']==word]
+                for i in range((target//len(focus))-1):
+                    self.index = pd.concat([self.index, focus])
+
+            print(f"maximal word presence after extension: {self.index.value_counts('word').values[0]}")
+            print(f"minimal word presence after extension: {self.index.value_counts('word').values[-1]}")
 
         self.available_ids = list(self.index.index)
         self.on_epoch_end()

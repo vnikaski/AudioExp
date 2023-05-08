@@ -21,7 +21,6 @@ parser.add_argument('--glr', default=None)
 parser.add_argument('--wlr', default=None)
 parser.add_argument('--wbatch', default=None)
 parser.add_argument('--gbatch', default=None)
-parser.add_argument('--cppath', default='./cp.ckpt')
 parser.add_argument('--nmels', default=512)
 parser.add_argument('--nfft', default=2048)
 parser.add_argument('--hop', default=44)
@@ -64,8 +63,8 @@ train_gen = TTSGenre(
     norm=args.norm,
     urbanpath=args.urbanpath,
     shuffle=True,
-    wbatch = int(args.wbatch),
-    gbatch = int(args.gbatch)
+    wbatch = args.wbatch,
+    gbatch = args.gbatch
 )
 
 val_gen = TTSGenre(
@@ -163,7 +162,7 @@ print(model.summary())
 train_ds = train_ds.apply(tf.data.experimental.assert_cardinality(len(train_gen)))
 val_ds = val_ds.apply(tf.data.experimental.assert_cardinality(len(val_gen)))
 
-cp_callback = tf.keras.callbacks.ModelCheckpoint(filepath=f"{args.model}l{args.lr}{args.wlr}{args.glr}m{args.nmels}f{args.nfft}w{args.window}n{args.words}ww{args.whichword}h{args.hop}_" + datetime.datetime.now().strftime("%m%d-%H%M") + args.cppath,
+cp_callback = tf.keras.callbacks.ModelCheckpoint(filepath=f"{args.model}l{args.lr}{args.wlr}{args.glr}m{args.nmels}f{args.nfft}w{args.window}n{args.words}ww{args.whichword}h{args.hop}_" + datetime.datetime.now().strftime("%m%d-%H%M") + '.ckpt',
                                                  save_weights_only=True,
                                                  verbose=0,
                                                  )

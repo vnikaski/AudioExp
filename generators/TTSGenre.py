@@ -12,9 +12,15 @@ class TTSGenre(keras.utils.Sequence):
             wbatch = batch_size//2
             gbatch = batch_size//2
         elif gbatch is None:
+            wbatch = int(wbatch)
             gbatch = batch_size-wbatch
         elif wbatch is None:
+            gbatch = int(gbatch)
             wbatch = batch_size-gbatch
+        else:
+            gbatch = int(gbatch)
+            wbatch = int(wbatch)
+        self.mode = mode
 
         self.libriGen = LibriTTSClean(data_path=libri_path,
                                       mode=mode,
@@ -42,6 +48,8 @@ class TTSGenre(keras.utils.Sequence):
                               hop=hop,
                               quiet=quiet,
                               norm=norm)
+        self.classes={'wout': np.zeros((0,len(self.libriGen.words))), 'gout':np.zeros((0,10))}
+
     def __len__(self):
         return min(len(self.gtzanGen), len(self.libriGen))
 
@@ -62,6 +70,9 @@ class TTSGenre(keras.utils.Sequence):
         gout = np.zeros((te, *y_g.shape[1:]))
         wout[:y_l.shape[0]] = y_l
         gout[y_l.shape[0]:] = y_g
+        if self.mode in ['val', 'test']:
+            self.classes['wout'] = np.concatenate([self.classes['wout'], wout])
+            self.classes['gout'] = np.concatenate([self.classes['gout'], gout])
         wout = tf.constant(wout)
         gout = tf.constant(gout)
         return keras.backend.variable(X), {'wout': wout, 'gout': gout}
