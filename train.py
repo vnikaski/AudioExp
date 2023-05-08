@@ -42,6 +42,7 @@ parser.add_argument('--mlpheadu', default=256)
 parser.add_argument('--norm', choices=['smaple', 'batch', 'none'], default='sample')
 parser.add_argument('--augment', action='store_true')
 parser.add_argument('--urbanpath')
+parser.add_argument('--pretrained', action='store_false')
 
 
 
@@ -108,7 +109,7 @@ val_ds = tf.data.Dataset.from_generator(
 
 
 if args.model == 'kell':
-    model = Kell2018(input_shape, wout_shape[0], gout_shape[0])
+    model = Kell2018(input_shape, wout_shape[0], gout_shape[0], pretrained=args.pretrained)
 elif args.model == 'kellsmall':
     model = Kell2018small(input_shape, wout_shape[0], gout_shape[0])
 elif args.model == 'astcon':
