@@ -39,7 +39,7 @@ def Kell2018(input_shape, wout_shape, gout_shape, pretrained=True):
     model.output_names = ['wout', 'gout']
 
     if pretrained==True:
-        weights = np.load('network_weights_early_layers.npy', allow_pickle=True, encoding='latin1') # https://github.com/mcdermottLab/kelletal2018/blob/master/network/weights/network_weights_early_layers.npy
+        weights = np.load('models/network_weights_early_layers.npy', allow_pickle=True, encoding='latin1') # https://github.com/mcdermottLab/kelletal2018/blob/master/network/weights/network_weights_early_layers.npy
         weights = weights.item()
         for lname in list(weights.keys()):
             model.get_layer(lname).set_weights([
