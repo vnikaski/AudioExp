@@ -9,10 +9,10 @@ def Kell2018(input_shape, wout_shape, gout_shape, pretrained=True):
     inp = Input(input_shape)
     x = Conv2D(filters=96, kernel_size=9, strides=3, input_shape=input_shape, activation='relu', name='conv1', padding='same')(inp)
     x = MaxPool2D(pool_size=(3,3), strides=2, name='MaxPool1', padding='same')(x)
-    x = Lambda(tf.nn.local_response_normalization, name='LRN1')(x)
+    x = Lambda(tf.nn.local_response_normalization, arguments={'depth_radius': 5, 'bias': 1, 'alpha': 1e-3, 'beta': 0.75},name='LRN1')(x)
     x = Conv2D(filters=256, kernel_size=5, strides=2, activation='relu', name='conv2', padding='same')(x)
     x = MaxPool2D(pool_size=(3,3), strides=2, name='MaxPool2', padding='same')(x)
-    x = Lambda(tf.nn.local_response_normalization, name='LRN2')(x)
+    x = Lambda(tf.nn.local_response_normalization, arguments={'depth_radius': 5, 'bias': 1, 'alpha': 1e-3, 'beta': 0.75}, name='LRN2')(x)
     x = Conv2D(filters=512, kernel_size=3, strides=1, activation='relu', name='conv3', padding='same')(x)
 
     # word branch
@@ -23,7 +23,7 @@ def Kell2018(input_shape, wout_shape, gout_shape, pretrained=True):
     x_w = Dropout(0.1, name='WDrop1')(x_w)
     x_w = Dense(1024, activation='relu', name='fc6_W')(x_w)
     x_w = Dropout(0.5, name='WDrop2')(x_w)
-    wout = Dense(wout_shape, activation='softmax', name='fctop_W')(x_w)
+    wout = Dense(wout_shape, name='fctop_W', activation=None)(x_w)
 
     # genre branch
     x_g = Conv2D(filters=1024, kernel_size=3, strides=1, activation='relu', name='conv4_G', padding='same')(x)
@@ -33,7 +33,7 @@ def Kell2018(input_shape, wout_shape, gout_shape, pretrained=True):
     x_g = Dropout(0.1, name='GDrop1')(x_g)
     x_g = Dense(1024, activation='relu', name='fc6_G')(x_g)
     x_g = Dropout(0.5, name='GDrop2')(x_g)
-    gout = Dense(gout_shape, activation='softmax', name='fctop_G')(x_g)
+    gout = Dense(gout_shape, name='fctop_G', activation=None)(x_g)
 
     model = keras.Model(inp, [wout, gout])
     model.output_names = ['wout', 'gout']
