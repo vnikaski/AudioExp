@@ -42,7 +42,7 @@ parser.add_argument('--mlpheadu', default=256)
 parser.add_argument('--norm', choices=['smaple', 'batch', 'none'], default='sample')
 parser.add_argument('--augment', action='store_true')
 parser.add_argument('--urbanpath')
-parser.add_argument('--pretrained', action='store_false')
+parser.add_argument('--pretrained', action='store_true')
 
 
 
