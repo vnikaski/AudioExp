@@ -7,33 +7,33 @@ import numpy as np
 def Kell2018(input_shape, wout_shape, gout_shape, pretrained=True):
     # shared pathway
     inp = Input(input_shape)
-    x = Conv2D(filters=96, kernel_size=9, strides=3, input_shape=input_shape, activation='relu', name='conv1')(inp)
-    x = MaxPool2D(pool_size=(3,3), strides=2, name='MaxPool1')(x)
+    x = Conv2D(filters=96, kernel_size=9, strides=3, input_shape=input_shape, activation='relu', name='conv1', padding='same')(inp)
+    x = MaxPool2D(pool_size=(3,3), strides=2, name='MaxPool1', padding='same')(x)
     x = Lambda(tf.nn.local_response_normalization, name='LRN1')(x)
-    x = Conv2D(filters=256, kernel_size=5, strides=2, activation='relu', name='conv2')(x)
-    x = MaxPool2D(pool_size=(3,3), strides=2, name='MaxPool2')(x)
+    x = Conv2D(filters=256, kernel_size=5, strides=2, activation='relu', name='conv2', padding='same')(x)
+    x = MaxPool2D(pool_size=(3,3), strides=2, name='MaxPool2', padding='same')(x)
     x = Lambda(tf.nn.local_response_normalization, name='LRN2')(x)
-    x = Conv2D(filters=512, kernel_size=3, strides=1, activation='relu', name='conv3')(x)
+    x = Conv2D(filters=512, kernel_size=3, strides=1, activation='relu', name='conv3', padding='same')(x)
 
     # word branch
-    x_w = Conv2D(filters=1024, kernel_size=3, strides=1, activation='relu', name='conv4_W')(x)
-    x_w = Conv2D(filters=512, kernel_size=3, strides=1, activation='relu', name='conv5_W')(x_w)
-    x_w = AvgPool2D(pool_size=(3,3), strides=2, name='WAvgPool1')(x_w)
+    x_w = Conv2D(filters=1024, kernel_size=3, strides=1, activation='relu', name='conv4_W', padding='same')(x)
+    x_w = Conv2D(filters=512, kernel_size=3, strides=1, activation='relu', name='conv5_W', padding='same')(x_w)
+    x_w = AvgPool2D(pool_size=(3,3), strides=2, name='WAvgPool1', padding='same')(x_w)
     x_w = Flatten(name='WFlatten')(x_w)
     x_w = Dropout(0.1, name='WDrop1')(x_w)
-    x_w = Dense(4096, activation='relu', name='WDense1')(x_w)
+    x_w = Dense(1024, activation='relu', name='fc6_W')(x_w)
     x_w = Dropout(0.5, name='WDrop2')(x_w)
-    wout = Dense(wout_shape, activation='softmax', name='WDense2')(x_w)
+    wout = Dense(wout_shape, activation='softmax', name='fctop_W')(x_w)
 
     # genre branch
-    x_g = Conv2D(filters=1024, kernel_size=3, strides=1, activation='relu', name='conv4_G')(x)
-    x_g = Conv2D(filters=512, kernel_size=3, strides=1, activation='relu', name='conv5_G')(x_g)
-    x_g = AvgPool2D(pool_size=(3,3), strides=2, name='GAvgPool1')(x_g)
+    x_g = Conv2D(filters=1024, kernel_size=3, strides=1, activation='relu', name='conv4_G', padding='same')(x)
+    x_g = Conv2D(filters=512, kernel_size=3, strides=1, activation='relu', name='conv5_G', padding='same')(x_g)
+    x_g = AvgPool2D(pool_size=(3,3), strides=2, name='GAvgPool1', padding='same')(x_g)
     x_g = Flatten(name='GFlatten')(x_g)
     x_g = Dropout(0.1, name='GDrop1')(x_g)
-    x_g = Dense(4096, activation='relu', name='GDense1')(x_g)
+    x_g = Dense(1024, activation='relu', name='fc6_G')(x_g)
     x_g = Dropout(0.5, name='GDrop2')(x_g)
-    gout = Dense(gout_shape, activation='softmax', name='GDense2')(x_g)
+    gout = Dense(gout_shape, activation='softmax', name='fctop_G')(x_g)
 
     model = keras.Model(inp, [wout, gout])
     model.output_names = ['wout', 'gout']
