@@ -23,7 +23,7 @@ def Kell2018(input_shape, wout_shape, gout_shape, pretrained=True):
     x_w = Dropout(0.1, name='WDrop1')(x_w)
     x_w = Dense(1024, activation='relu', name='fc6_W')(x_w)
     x_w = Dropout(0.5, name='WDrop2')(x_w)
-    wout = Dense(wout_shape, name='fctop_W', activation=None)(x_w)
+    wout = Dense(wout_shape, name='fctop_W', activation='softmax')(x_w)
 
     # genre branch
     x_g = Conv2D(filters=1024, kernel_size=3, strides=1, activation='relu', name='conv4_G', padding='same')(x)
@@ -33,7 +33,7 @@ def Kell2018(input_shape, wout_shape, gout_shape, pretrained=True):
     x_g = Dropout(0.1, name='GDrop1')(x_g)
     x_g = Dense(1024, activation='relu', name='fc6_G')(x_g)
     x_g = Dropout(0.5, name='GDrop2')(x_g)
-    gout = Dense(gout_shape, name='fctop_G', activation=None)(x_g)
+    gout = Dense(gout_shape, name='fctop_G', activation='softmax')(x_g)
 
     model = keras.Model(inp, [wout, gout])
     model.output_names = ['wout', 'gout']
