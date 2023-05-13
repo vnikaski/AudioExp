@@ -55,6 +55,7 @@ maxim.init_submodel(model=model, out_layer_name=args.layername)
 import warnings
 warnings.filterwarnings("ignore")
 
-df = maxim.look_for_all_channels(libri_gen)
+df_most, df_least = maxim.look_for_all_channels(libri_gen)
 
-df.to_csv(os.path.join(args.savepath, f"{args.layername}_libri.csv"))
+df_most.to_csv(os.path.join(args.savepath, f"{args.layername}_most_libri.csv"))
+df_least.to_csv(os.path.join(args.savepath, f"{args.layername}_least_libri.csv"))
