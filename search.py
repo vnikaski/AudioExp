@@ -14,13 +14,14 @@ parser = argparse.ArgumentParser()
 parser.add_argument('-d', '--datapath')
 parser.add_argument('-l', '--layername')
 parser.add_argument('-s', '--savepath')
+parser.add_argument('-b', '--batchsize')
 
 args = parser.parse_args()
 
 libri_gen = LibriTTSClean(
     data_path=args.datapath,
     words=1000,
-    batch_size=8,
+    batch_size=int(args.batchsize),
     window_s=2,
     which_word=1,
     sr=16000,

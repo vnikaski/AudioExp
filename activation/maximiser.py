@@ -109,7 +109,7 @@ class Maximiser:
                     df_least[df_least['channel']!=channel_number],
                     df_least[df_least['channel']==channel_number].reset_index(drop=True).iloc[:5]
                 ], ignore_index=True).reset_index(drop=True)
-                pbar.set_description(f"{channel_number} channel, "
+                pbar.set_description(f"step {i}, {channel_number} channel, "
                                      f"max activation: {list(df_most[df_most['channel']==channel_number]['activation'])[-1]}, "
                                      f"min activation {list(df_least[df_least['channel']==channel_number]['activation'])[0]}")
         return df_most, df_least
