@@ -1,23 +1,28 @@
 import tensorflow as tf
 import keras.applications
-from keras.layers import Conv2D, Embedding, RepeatVector, AvgPool2D, Dropout, Concatenate, Reshape, Permute, Add, MultiHeadAttention, MaxPool2D, Dense, Layer, Lambda, Flatten, Input, LayerNormalization
+from keras.layers import Conv2D, Embedding, ReLU, AvgPool2D, Dropout, Concatenate, Reshape, Permute, Add, MultiHeadAttention, MaxPool2D, Dense, Layer, Lambda, Flatten, Input, LayerNormalization
 import keras.backend as K
 import numpy as np
 
 def Kell2018(input_shape, wout_shape, gout_shape, pretrained=True):
     # shared pathway
     inp = Input(input_shape)
-    x = Conv2D(filters=96, kernel_size=9, strides=3, input_shape=input_shape, activation='relu', name='conv1', padding='same')(inp)
+    x = Conv2D(filters=96, kernel_size=9, strides=3, input_shape=input_shape, activation=None, name='conv1', padding='same')(inp)
+    x = ReLU(name='relu1')(x)
     x = MaxPool2D(pool_size=(3,3), strides=2, name='MaxPool1', padding='same')(x)
     x = Lambda(tf.nn.local_response_normalization, arguments={'depth_radius': 5, 'bias': 1, 'alpha': 1e-3, 'beta': 0.75},name='LRN1')(x)
-    x = Conv2D(filters=256, kernel_size=5, strides=2, activation='relu', name='conv2', padding='same')(x)
+    x = Conv2D(filters=256, kernel_size=5, strides=2, activation=None, name='conv2', padding='same')(x)
+    x = ReLU(name='relu2')(x)
     x = MaxPool2D(pool_size=(3,3), strides=2, name='MaxPool2', padding='same')(x)
     x = Lambda(tf.nn.local_response_normalization, arguments={'depth_radius': 5, 'bias': 1, 'alpha': 1e-3, 'beta': 0.75}, name='LRN2')(x)
-    x = Conv2D(filters=512, kernel_size=3, strides=1, activation='relu', name='conv3', padding='same')(x)
+    x = Conv2D(filters=512, kernel_size=3, strides=1, activation=None, name='conv3', padding='same')(x)
+    x = ReLU(name='relu3')(x)
 
     # word branch
-    x_w = Conv2D(filters=1024, kernel_size=3, strides=1, activation='relu', name='conv4_W', padding='same')(x)
-    x_w = Conv2D(filters=512, kernel_size=3, strides=1, activation='relu', name='conv5_W', padding='same')(x_w)
+    x_w = Conv2D(filters=1024, kernel_size=3, strides=1, activation=None, name='conv4_W', padding='same')(x)
+    x_w = ReLU(name='relu4_W')(x_w)
+    x_w = Conv2D(filters=512, kernel_size=3, strides=1, activation=None, name='conv5_W', padding='same')(x_w)
+    x_w = ReLU(name='relu5_W')(x_w)
     x_w = AvgPool2D(pool_size=(3,3), strides=2, name='WAvgPool1', padding='same')(x_w)
     x_w = Flatten(name='WFlatten')(x_w)
     x_w = Dropout(0.1, name='WDrop1')(x_w)
@@ -26,8 +31,10 @@ def Kell2018(input_shape, wout_shape, gout_shape, pretrained=True):
     wout = Dense(wout_shape, name='fctop_W', activation='softmax')(x_w)
 
     # genre branch
-    x_g = Conv2D(filters=1024, kernel_size=3, strides=1, activation='relu', name='conv4_G', padding='same')(x)
-    x_g = Conv2D(filters=512, kernel_size=3, strides=1, activation='relu', name='conv5_G', padding='same')(x_g)
+    x_g = Conv2D(filters=1024, kernel_size=3, strides=1, activation=None, name='conv4_G', padding='same')(x)
+    x_g = ReLU(name='relu4_G')(x_g)
+    x_g = Conv2D(filters=512, kernel_size=3, strides=1, activation=None, name='conv5_G', padding='same')(x_g)
+    x_g = ReLU(name='relu5_G')(x_g)
     x_g = AvgPool2D(pool_size=(3,3), strides=2, name='GAvgPool1', padding='same')(x_g)
     x_g = Flatten(name='GFlatten')(x_g)
     x_g = Dropout(0.1, name='GDrop1')(x_g)

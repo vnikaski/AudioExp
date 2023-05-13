@@ -4,12 +4,12 @@ from tensorflow import keras
 import tensorflow as tf
 import pandas as pd
 import os
-from preprocessing.spectrograms import get_mel_spectrogram
+from preprocessing.spectrograms import get_mel_spectrogram, get_cochleagram
 import stopit
 
 
 class GTZAN(keras.utils.Sequence):
-    def __init__(self, data_path, mode='train', batch_size=32, shuffle=True, window_s=1, sr=22050, n_mels=512, n_fft=2048, hop=44, quiet=False, norm='sample'):
+    def __init__(self, data_path, mode='train', batch_size=32, shuffle=True, window_s=1, sr=22050, n_mels=512, n_fft=2048, hop=44, quiet=False, norm='sample', preprocess='mel'):
         print(f'initialising {mode} GTZAN generator...')
         self.data_path = data_path
         self.batch_size = batch_size
@@ -25,6 +25,7 @@ class GTZAN(keras.utils.Sequence):
         self.index = pd.read_csv(os.path.join(self.data_path, 'gtzan.index'))
         self.index = self.index.loc[self.index['split']==self.mode]
         self.data_path = os.path.join(self.data_path, 'genres_original')
+        self.preprocess = preprocess
 
         self.classes = np.asarray(self.index['label'].unique())
 
@@ -40,6 +41,12 @@ class GTZAN(keras.utils.Sequence):
         X, y = self._data_generation(batch_ids)
         return X, y
 
+    def get_data_with_info(self, id):
+        batch_ids = self.indices[id*self.batch_size: (id+1)*self.batch_size]
+        X, _ = self._data_generation(batch_ids)
+        df = self.index.iloc[batch_ids]
+        return X, df
+
     def get_sample(self):
         X, y = self._data_generation([0])
         return X, y
@@ -50,8 +57,14 @@ class GTZAN(keras.utils.Sequence):
             np.random.shuffle(self.indices)
 
     def _data_generation(self, batch_ids):
-        width = int((self.sr * self.window_s)/self.hop)
-        X = np.empty((len(batch_ids), self.n_mels, width, 1))
+        if self.preprocess == 'mel':
+            width = int((self.sr * self.window_s)/self.hop)
+            height = int(self.n_mels)
+        elif self.preprocess == 'cochlea':
+            width, height = 256, 256
+        else:
+            raise NotImplementedError
+        X = np.empty((len(batch_ids), height, width, 1))
         y = np.empty((len(batch_ids), len(self.classes)))
         batch_diff = 0
 
@@ -69,7 +82,7 @@ class GTZAN(keras.utils.Sequence):
                 if not self.quiet:
                     print(f'loading file {fname} raised an exception, this file was skipped')
                 batch_diff += 1
-                new_X = np.empty((len(batch_ids)-batch_diff, self.n_mels, width, 1))
+                new_X = np.empty((len(batch_ids)-batch_diff, height, width, 1))
                 new_y = np.empty((len(batch_ids)-batch_diff, len(self.classes)))
                 new_X[:i-batch_diff+1] = X[:i-batch_diff+1]
                 new_y[:i-batch_diff+1] = y[:i-batch_diff+1]
@@ -83,7 +96,12 @@ class GTZAN(keras.utils.Sequence):
             else:
                 wavf = librosa.util.pad_center(wavf, size=int(self.sr*self.window_s))
 
-            spec = get_mel_spectrogram(wavf, self.sr, self.n_fft, self.hop, self.n_mels)
+            if self.preprocess == 'mel':
+                spec = get_mel_spectrogram(wavf, self.sr, self.n_fft, self.hop, self.n_mels)
+            elif self.preprocess == 'cochlea':
+                spec = get_cochleagram(wavf, self.sr, self.window_s)
+            else:
+                raise NotImplementedError
 
             if self.norm == 'sample':
                 mean, var = tf.nn.moments(spec, axes=[0,1])

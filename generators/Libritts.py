@@ -4,14 +4,14 @@ from tensorflow import keras
 import tensorflow as tf
 import pandas as pd
 import os
-from preprocessing.spectrograms import get_mel_spectrogram
+from preprocessing.spectrograms import get_mel_spectrogram, get_cochleagram
 import stopit
 
 NOISE_LVL = 0.5
 GET_WAV = False # for testing purposes
 
 class LibriTTSClean(keras.utils.Sequence):
-    def __init__(self, data_path, mode='train', words=200, batch_size=32, shuffle=True, window_s=1, which_word=2, sr=24000, n_mels=512, n_fft=2048, hop=44, quiet=False, augment=True, norm='sample', urban_path=None, extend=True):
+    def __init__(self, data_path, mode='train', words=200, batch_size=32, shuffle=True, window_s=1, which_word=2, sr=24000, n_mels=512, n_fft=2048, hop=44, quiet=False, augment=True, norm='sample', urban_path=None, extend=True, preprocess='mel'):
         print(f'initialising {mode} Libri generator...')
         self.data_path = data_path
         self.batch_size = batch_size
@@ -34,6 +34,7 @@ class LibriTTSClean(keras.utils.Sequence):
         else:
             raise ValueError(f'Unsupported mode {self.mode}, try \'train\', \'val\' or \'test\'')
         self.data_path = os.path.join(self.data_path, self.subset+'/')
+        self.preprocess = preprocess
 
         if self.augment:
             if urban_path is None:
@@ -111,6 +112,12 @@ class LibriTTSClean(keras.utils.Sequence):
         X, y = self._data_generation(batch_ids)
         return X, y
 
+    def get_data_with_info(self, id):
+        batch_ids = self.indices[id*self.batch_size: (id+1)*self.batch_size]
+        X, _ = self._data_generation(batch_ids)
+        df = self.index.iloc[batch_ids]
+        return X, df
+
     def get_sample(self):
         X, y = self._data_generation([0])
         return X, y
@@ -122,8 +129,14 @@ class LibriTTSClean(keras.utils.Sequence):
 
     def _data_generation(self, batch_ids):
         # todo: change int(self.sr*self.window_s) to width
-        width = int((self.sr * self.window_s)/self.hop)
-        X = np.empty((len(batch_ids), self.n_mels, width, 1))
+        if self.preprocess == 'mel':
+            width = int((self.sr * self.window_s)/self.hop)
+            height = int(self.n_mels)
+        elif self.preprocess == 'cochlea':
+            width, height = 256, 256
+        else:
+            raise NotImplementedError
+        X = np.empty((len(batch_ids), height, width, 1))
         y = np.empty((len(batch_ids), len(self.words)))
         batch_diff = 0
 
@@ -139,17 +152,19 @@ class LibriTTSClean(keras.utils.Sequence):
                 if not self.quiet:
                     print(f'loading file {fname} raised an exception {e}, this file was skipped')
                 batch_diff += 1
-                new_X = np.empty((len(batch_ids)-batch_diff, self.n_mels, width, 1))
+                new_X = np.empty((len(batch_ids)-batch_diff, height, width, 1))
                 new_y = np.empty((len(batch_ids)-batch_diff, len(self.words)))
                 new_X[:i-batch_diff+1] = X[:i-batch_diff+1]
                 new_y[:i-batch_diff+1] = y[:i-batch_diff+1]
                 X = new_X
                 y = new_y
                 continue
+
             if len(wavf) >= int(self.sr*self.window_s):
                 wavf = wavf[:int(self.sr*self.window_s)]
             else:
                 wavf = librosa.util.pad_center(wavf, size=int(self.sr*self.window_s))
+
             if self.augment:
                 which = np.random.randint(0, len(self.urban_index)-1)
                 noise, _ = librosa.load(os.path.join(os.path.join(self.urban_path, 'audio'), self.urban_index['fname'][which]), sr=self.sr)
@@ -160,10 +175,13 @@ class LibriTTSClean(keras.utils.Sequence):
                     noise = librosa.util.pad_center(noise, size=int(self.sr*self.window_s))
                 noise *= NOISE_LVL
                 wavf += noise
-                if GET_WAV:
-                    return wavf, self.index.iloc[id]['word']
 
-            spec = get_mel_spectrogram(wavf, self.sr, self.n_fft, self.hop, self.n_mels)
+            if self.preprocess == 'mel':
+                spec = get_mel_spectrogram(wavf, self.sr, self.n_fft, self.hop, self.n_mels)
+            elif self.preprocess == 'cochlea':
+                spec = get_cochleagram(wavf, self.sr, self.window_s)
+            else:
+                raise NotImplementedError
             if self.norm == 'sample':
                 mean, var = tf.nn.moments(spec, axes=[0,1])
                 spec = (spec-mean.numpy())/np.sqrt(var.numpy()+1e-8)  # prevent 0 division
