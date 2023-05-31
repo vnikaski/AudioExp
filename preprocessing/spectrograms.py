@@ -8,6 +8,8 @@ low_lim, hi_lim = 20, 8000
 nonlinearity, fft_mode, ret_mode = 'power', 'auto', 'envs'
 sample_factor, pad_factor, downsample = 4, 2, 200
 strict = True
+orig_shape = (400,211)
+
 
 
 def get_mel_spectrogram(signal, sr, n_fft, hop_length, n_mels):
@@ -22,9 +24,12 @@ def get_spectrogram(signal, n_fft, hop_length):
     return spect_db
 
 
-def resample(example, new_size):
+def resample(example, new_size, keep_pixels=False):
     im = Image.fromarray(example)
-    resized_image = im.resize(new_size, resample=Image.ANTIALIAS)
+    if keep_pixels:
+        resized_image = im.resize(new_size, resample=Image.NEAREST)
+    else:
+        resized_image = im.resize(new_size, resample=Image.ANTIALIAS)
     return np.array(resized_image)
 
 
@@ -35,3 +40,11 @@ def get_cochleagram(signal, sr, window_s=2):
     c_gram_reshape_1 = np.reshape(c_gram_rescaled, (211,int(200*window_s)))
     c_gram_reshape_2 = resample(c_gram_reshape_1,(256,256))
     return c_gram_reshape_2
+
+
+def reverse_cochleagram(c_gram, sr):
+    c_gram = resample(c_gram, orig_shape, keep_pixels=True)
+    wav = cgram.invert_cochleagram(c_gram, sr, n, low_lim, hi_lim, sample_factor, downsample=downsample, nonlinearity=nonlinearity, strict=False)
+    return wav
+
+
