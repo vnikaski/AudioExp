@@ -27,13 +27,13 @@ def get_data_sample(i):
 
 
 def optimise_metamer(input_img, model, orig_activation, hs_num, n_steps, upward_lim=8, reduce_factor=0.5):
-    optimizer = torch.optim.Adam([input_img], lr=1e-1)
     prev_loss=np.inf
     prev_inp= input_img.detach().clone()
     upward_count=0
 
     model.to(device)
     input_img = torch.nn.Parameter(input_img.to(device))
+    optimizer = torch.optim.Adam([input_img], lr=1e-1)
     #input_img = input_img.to(device).requires_grad_(True)
 
     for _ in (pbar:= tqdm(range(n_steps))):
@@ -50,8 +50,8 @@ def optimise_metamer(input_img, model, orig_activation, hs_num, n_steps, upward_
 
         if loss>prev_loss:
             if upward_count>=upward_lim:
-                input_img = prev_inp.detach().clone().requires_grad_(True)
-                #input_img.to(device)
+                input_img = torch.nn.Parameter(prev_inp.detach().clone().requires_grad_(True).to(device))
+                #input_img = prev_inp.detach().clone().requires_grad_(True)
                 upward_count = 0
                 optimizer = torch.optim.Adam([input_img], lr=optimizer.param_groups[0]["lr"]*reduce_factor)
             else:
