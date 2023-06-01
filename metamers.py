@@ -26,8 +26,9 @@ def get_data_sample(i):
     return sample, sampling_rate
 
 
-def optimise_metamer(input_img, model, orig_activation, hs_num, n_steps, upward_lim=8, reduce_factor=0.5):
-    prev_loss=np.inf
+def optimise_metamer(input_img, model, orig_activation, hs_num, n_steps, upward_lim=8, reduce_factor=0.5, prev_loss=None):
+    if prev_loss is None:
+        prev_loss=np.inf
     prev_inp= input_img.detach().clone()
     upward_count=0
 
@@ -69,6 +70,7 @@ def get_AST_metamers(sample, model, save_dir, hidden_states):
     metamers = [torch.tensor(np.random.random_sample(sample.shape), dtype=torch.float32) for _ in range(N_HS)]
     for i in hidden_states:
         input_img = torch.tensor(np.random.random_sample(sample.shape), dtype=torch.float32)
+        loss=np.inf
         for _ in range(4):
             input_img, loss = optimise_metamer(
                 input_img=input_img,
@@ -76,6 +78,7 @@ def get_AST_metamers(sample, model, save_dir, hidden_states):
                 orig_activation=model(sample).hidden_states,
                 hs_num=i,
                 n_steps=6000,
+                prev_loss=loss
             )
             np.save(os.path.join(save_dir, f'AST_{i}_metamer_{loss}_ID{ID}.npy'), input_img.cpu().detach().numpy())
         metamers[i] = input_img
