@@ -37,7 +37,7 @@ def optimise_metamer(input_img, model, orig_activation, hs_num, n_steps, upward_
     input_img.to(device)
 
     for _ in (pbar:= tqdm(range(n_steps))):
-        input_img.to(device)
+        input_img.cuda()
         print((f'inp {input_img.is_cuda}'))
         outputs_t = model(input_img)
         hs = torch.square(torch.add(outputs_t.hidden_states[hs_num], -orig_activation[hs_num]))
