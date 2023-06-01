@@ -33,14 +33,13 @@ def optimise_metamer(input_img, model, orig_activation, hs_num, n_steps, upward_
     upward_count=0
 
     model.to(device)
-    input_img = input_img.to(device).requires_grad_(True)
+    input_img = torch.nn.Parameter(input_img.to(device))
+    #input_img = input_img.to(device).requires_grad_(True)
 
     for _ in (pbar:= tqdm(range(n_steps))):
         outputs_t = model(input_img)
         hs = torch.square(torch.add(outputs_t.hidden_states[hs_num], -orig_activation[hs_num]))
         loss = torch.mul(torch.norm(hs, dim=(1,2), p=2), 1/(torch.norm(orig_activation[hs_num])+1e-8))
-        print(loss)
-        print(f'{loss.is_cuda}')
 
         loss.backward()
         # grads = input_img.grad
