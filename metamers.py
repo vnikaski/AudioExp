@@ -16,6 +16,7 @@ from models.load_AST import load_AST
 N_HS = 13
 ID = 0
 
+device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
 def get_data_sample(i):
     dataset = load_dataset("hf-internal-testing/librispeech_asr_demo", "clean", split="validation")
@@ -32,6 +33,9 @@ def optimise_metamer(input_img, model, orig_activation, hs_num, n_steps, upward_
     prev_inp= input_img.detach().clone()
     upward_count=0
 
+    model.to(device)
+    input_img.to(device)
+
     for _ in (pbar:= tqdm(range(n_steps))):
         outputs_t = model(input_img)
         hs = torch.square(torch.add(outputs_t.hidden_states[hs_num], -orig_activation[hs_num]))
@@ -47,6 +51,7 @@ def optimise_metamer(input_img, model, orig_activation, hs_num, n_steps, upward_
         if loss>prev_loss:
             if upward_count>=upward_lim:
                 input_img = prev_inp.detach().clone().requires_grad_(True)
+                input_img.to(device)
                 upward_count = 0
                 optimizer = torch.optim.Adam([input_img], lr=optimizer.param_groups[0]["lr"]*reduce_factor)
             else:
@@ -72,8 +77,8 @@ def get_AST_metamers(sample, model, save_dir, hidden_states):
                 hs_num=i,
                 n_steps=6000,
             )
+            np.save(os.path.join(save_dir, f'AST_{i}_metamer_{loss}_ID{ID}.npy'), input_img.detach().numpy())
         metamers[i] = input_img
-        np.save(os.path.join(save_dir, f'AST_{i}_metamer_{loss}_ID{ID}.npy'), input_img.detach().numpy())
     return metamers
 
 parser = argparse.ArgumentParser()
