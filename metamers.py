@@ -13,7 +13,7 @@ import argparse
 
 from models.load_AST import load_AST
 
-HS_NUMS = list(range(13))
+N_HS = 13
 ID = 0
 
 def get_data_sample(i):
@@ -59,9 +59,9 @@ def optimise_metamer(input_img, model, orig_activation, hs_num, n_steps, upward_
     return prev_inp, prev_loss[0]
 
 
-def get_AST_metamers(sample, model, save_dir):
-    metamers = [torch.tensor(np.random.random_sample(sample.shape), dtype=torch.float32, requires_grad=True) for i in range(13)]
-    for i in HS_NUMS:
+def get_AST_metamers(sample, model, save_dir, hidden_states):
+    metamers = [torch.tensor(np.random.random_sample(sample.shape), dtype=torch.float32, requires_grad=True) for i in range(N_HS)]
+    for i in hidden_states:
         input_img = torch.tensor(np.random.random_sample(sample.shape), dtype=torch.float32, requires_grad=True)
         for _ in range(4):
             input_img, loss = optimise_metamer(
@@ -78,19 +78,27 @@ def get_AST_metamers(sample, model, save_dir):
 parser = argparse.ArgumentParser()
 
 parser.add_argument('--savepath')
+parser.add_argument('--hiddenstates', default='all')
 args = parser.parse_args()
 
 dataset = load_dataset("hf-internal-testing/librispeech_asr_demo", "clean", split="validation")
 dataset = dataset.sort("id")
 sampling_rate = dataset.features["audio"].sampling_rate
 
+hs = args.hiddenstates
+if hs == 'all':
+    hs = list(range(N_HS))
+else:
+    hs = hs.split('-')
+    hs = [int(state) for state in hs]
+
 feature_extractor, model = load_AST()
 sample = feature_extractor(dataset[0]["audio"]["array"], sampling_rate=sampling_rate, return_tensors="pt")['input_values']
 
-metamers = get_AST_metamers(sample, model, save_dir=args.savepath)
+metamers = get_AST_metamers(sample, model, save_dir=args.savepath, hidden_states=hs)
 
 plt.figure()
-for i in range(13):
+for i in range(N_HS):
     plt.subplot(4,4,i+1)
     librosa.display.specshow(metamers[i].detach().numpy()[0].T)
 plt.savefig(os.path.join(args.savepath, 'metamers_plot.png'))
