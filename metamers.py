@@ -71,7 +71,7 @@ def get_AST_metamers(sample, model, save_dir):
                 n_steps=6000,
             )
         metamers[i] = input_img
-        np.save(os.path.join(save_dir, f'AST_{i}_metamer_{loss}_ID{ID}.npy'))
+        np.save(os.path.join(save_dir, f'AST_{i}_metamer_{loss}_ID{ID}.npy'), input_img.detach().numpy())
     return metamers
 
 parser = argparse.ArgumentParser()
