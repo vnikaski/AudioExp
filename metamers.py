@@ -38,7 +38,6 @@ def optimise_metamer(input_img, model, orig_activation, hs_num, n_steps, upward_
 
     for _ in (pbar:= tqdm(range(n_steps))):
         print((f'inp {input_img.is_cuda}'))
-        print((f'model {model.is_cuda}'))
         outputs_t = model(input_img)
         hs = torch.square(torch.add(outputs_t.hidden_states[hs_num], -orig_activation[hs_num]))
         loss = torch.mul(torch.norm(hs, dim=(1,2), p=2), 1/(torch.norm(orig_activation[hs_num])+1e-8))
