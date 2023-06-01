@@ -35,9 +35,9 @@ def optimise_metamer(input_img, model, orig_activation, hs_num, n_steps, upward_
     model.to(device)
     input_img = input_img.to(device).requires_grad_(True)
 
-    for _ in (pbar:= tqdm(range(n_steps))):
+    for j in (pbar:= tqdm(range(n_steps))):
         #input_img.cuda()
-        #print((f'inp {input_img.is_cuda}'))
+        print(f'{j} {input_img.is_leaf}')
         outputs_t = model(input_img)
         hs = torch.square(torch.add(outputs_t.hidden_states[hs_num], -orig_activation[hs_num]))
         loss = torch.mul(torch.norm(hs, dim=(1,2), p=2), 1/(torch.norm(orig_activation[hs_num])+1e-8))
