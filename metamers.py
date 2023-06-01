@@ -63,7 +63,7 @@ def optimise_metamer(input_img, model, orig_activation, hs_num, n_steps, upward_
             prev_inp = input_img.detach().clone()
 
         pbar.set_description(f'loss: {loss[0]}, lr: {optimizer.param_groups[0]["lr"]}')
-    return prev_inp, prev_loss[0]
+    return prev_inp, prev_loss
 
 
 def get_AST_metamers(sample, model, save_dir, hidden_states):
@@ -80,7 +80,7 @@ def get_AST_metamers(sample, model, save_dir, hidden_states):
                 n_steps=6000,
                 prev_loss=loss
             )
-            np.save(os.path.join(save_dir, f'AST_{i}_metamer_{loss}_ID{ID}.npy'), input_img.cpu().detach().numpy())
+            np.save(os.path.join(save_dir, f'AST_{i}_metamer_{loss[0]}_ID{ID}.npy'), input_img.cpu().detach().numpy())
         metamers[i] = input_img
     return metamers
 
