@@ -51,6 +51,7 @@ def optimise_metamer(input_img, model, orig_activation, hs_num, n_steps, upward_
             else:
                 upward_count += 1
         else:
+            upward_count=0
             prev_loss = loss.detach().clone()
             prev_inp = input_img.detach().clone()
 
