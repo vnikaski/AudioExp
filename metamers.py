@@ -67,9 +67,9 @@ def optimise_metamer(input_img, model, orig_activation, hs_num, n_steps, upward_
 
 
 def get_AST_metamers(sample, model, save_dir, hidden_states):
-    metamers = [torch.tensor(np.random.random_sample(sample.shape), dtype=torch.float32, requires_grad=True) for i in range(N_HS)]
+    metamers = [torch.tensor(np.random.random_sample(sample.shape), dtype=torch.float32) for _ in range(N_HS)]
     for i in hidden_states:
-        input_img = torch.tensor(np.random.random_sample(sample.shape), dtype=torch.float32, requires_grad=True)
+        input_img = torch.tensor(np.random.random_sample(sample.shape), dtype=torch.float32)
         for _ in range(4):
             input_img, loss = optimise_metamer(
                 input_img=input_img,
