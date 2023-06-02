@@ -26,7 +26,7 @@ def get_data_sample(i):
     return sample, sampling_rate
 
 
-def optimise_metamer(input_img, model, orig_activation, hs_num, n_steps, upward_lim=8, reduce_factor=0.5, prev_loss=None):
+def optimise_metamer(input_img, model, orig_activation, hs_num, n_steps, upward_lim=8, reduce_factor=0.5, prev_loss=None, save_dir=None):
     if prev_loss is None:
         prev_loss=np.inf
     upward_count=0
@@ -42,10 +42,6 @@ def optimise_metamer(input_img, model, orig_activation, hs_num, n_steps, upward_
         hs = torch.square(torch.add(outputs_t.hidden_states[hs_num], -orig_activation[hs_num]))
         loss = torch.mul(torch.norm(hs, dim=(1,2), p=2), 1/(torch.norm(orig_activation[hs_num])+1e-8))
 
-        if j==0:
-            print(prev_loss)
-            print(loss)
-
         loss.backward()
         # grads = input_img.grad
         optimizer.step()
@@ -54,8 +50,6 @@ def optimise_metamer(input_img, model, orig_activation, hs_num, n_steps, upward_
             return input_img, loss[0]
 
         if loss>prev_loss:
-            if j==0:
-                print('hi')
             if upward_count>=upward_lim:
                 input_img = torch.nn.Parameter(prev_inp.detach().clone().requires_grad_(True).to(device))
                 #input_img = prev_inp.detach().clone().requires_grad_(True)
@@ -68,6 +62,9 @@ def optimise_metamer(input_img, model, orig_activation, hs_num, n_steps, upward_
             prev_loss = loss.detach().clone()
             prev_inp = input_img.detach().clone()
 
+        if j%256 == 0 and save_dir is not None:
+            np.save(os.path.join(save_dir, f'AST_{hs_num}_metamer_{loss[0]}_ID{hs_num}.npy'), input_img.cpu().detach().numpy())
+            optimizer = torch.optim.Adam([input_img], lr=1e-1) # reset optim
 
         pbar.set_description(f'loss: {loss[0]}, lr: {optimizer.param_groups[0]["lr"]}, up: {upward_count}')
     return prev_inp, prev_loss
@@ -79,39 +76,15 @@ def get_AST_metamers(sample, model, save_dir, hidden_states):
     for i in hidden_states:
         input_img = torch.tensor(np.random.random_sample(sample.shape), dtype=torch.float32)
         loss=np.inf
-        prev_img, prev_loss = optimise_metamer(
+        input_img, loss = optimise_metamer(
             input_img=input_img,
             model=model,
             orig_activation=sample_activation,
             hs_num=i,
-            n_steps=256,
-            prev_loss=loss
+            n_steps=24000,
+            prev_loss=loss,
+            save_dir=save_dir
         )
-        prev_img, prev_loss = optimise_metamer(
-            input_img=prev_img,
-            model=model,
-            orig_activation=sample_activation,
-            hs_num=i,
-            n_steps=256,
-            prev_loss=prev_loss
-        )
-        prev_img, prev_loss = optimise_metamer(
-            input_img=prev_img,
-            model=model,
-            orig_activation=sample_activation,
-            hs_num=i,
-            n_steps=256,
-            prev_loss=prev_loss
-        )
-        input_img, loss = optimise_metamer(
-            input_img=prev_img,
-            model=model,
-            orig_activation=sample_activation,
-            hs_num=i,
-            n_steps=256,
-            prev_loss=prev_loss
-        )
-
         np.save(os.path.join(save_dir, f'AST_{i}_metamer_{loss[0]}_ID{ID}.npy'), input_img.cpu().detach().numpy())
         metamers[i] = input_img
     return metamers
