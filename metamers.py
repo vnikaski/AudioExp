@@ -77,10 +77,11 @@ def get_AST_metamers(sample, model, save_dir, hidden_states):
                 model=model,
                 orig_activation=model(sample).hidden_states,
                 hs_num=i,
-                n_steps=6000,
+                n_steps=512,
                 prev_loss=loss
             )
             np.save(os.path.join(save_dir, f'AST_{i}_metamer_{loss[0]}_ID{ID}.npy'), input_img.cpu().detach().numpy())
+            print(loss)
         metamers[i] = input_img
     return metamers
 
