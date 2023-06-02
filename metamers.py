@@ -85,7 +85,7 @@ def optimise_metamer(input_img, model, orig_activation, hs_num, n_steps, upward_
             print(test_loss)
 
 
-        pbar.set_description(f'loss: {loss[0]}, lr: {optimizer.param_groups[0]["lr"]}')
+        pbar.set_description(f'loss: {loss[0]}, lr: {optimizer.param_groups[0]["lr"]}, up: {upward_count}')
     return prev_inp, prev_loss
 
 
