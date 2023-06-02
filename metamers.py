@@ -1,4 +1,5 @@
 import torch
+import transformers
 from tqdm import tqdm
 import pandas as pd
 import numpy as np
@@ -18,6 +19,17 @@ ID = 0
 
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
+
+def rescale_gradients(gradients):
+    return gradients/(torch.sqrt(torch.mean(input=torch.square(gradients), dim=[1,2], keepdims=True))+1e-6)
+
+def lr_factor(step, warmup, total_steps):
+    if step < warmup:
+        return step * (1/warmup)
+    elif step >= warmup:
+        return 1 - (step-warmup)*(1/(total_steps-warmup))
+
+
 def get_data_sample(i):
     dataset = load_dataset("hf-internal-testing/librispeech_asr_demo", "clean", split="validation")
     dataset = dataset.sort("id")
@@ -35,9 +47,45 @@ def optimise_metamer(input_img, model, orig_activation, hs_num, n_steps, upward_
     #input_img = torch.nn.Parameter(input_img.to(device))
     input_img = torch.nn.Parameter(input_img.detach().clone().requires_grad_(True).to(device))
     prev_inp = input_img.detach().clone()
-    optimizer = torch.optim.Adam([input_img], lr=1e-1)
+    lr = 0.01
+    #optimizer = torch.optim.Adam([input_img], lr=1e-3)
+    #scheduler = transformers.get_linear_schedule_with_warmup(optimizer, num_warmup_steps=256, num_training_steps=n_steps)
     #input_img = input_img.to(device).requires_grad_(True)
 
+    for j in (pbar:= tqdm(range(n_steps))):
+        outputs_t = model(input_img)
+        hs = torch.square(torch.add(outputs_t.hidden_states[hs_num], -orig_activation[hs_num]))
+        loss = torch.mul(torch.norm(hs, dim=(1,2), p=2), 1/(torch.norm(orig_activation[hs_num])+1e-8))
+
+        loss.backward()
+        grads = input_img.grad
+        with torch.no_grad():
+            input_img -= lr * lr_factor(step=j, warmup=256, total_steps=n_steps) * rescale_gradients(grads)
+        #optimizer.step()
+
+        if loss[0]==0:
+            return input_img, loss[0]
+
+        if loss>prev_loss:
+            if upward_count>=upward_lim:
+                input_img = torch.nn.Parameter(prev_inp.detach().clone().requires_grad_(True).to(device))
+                #input_img = prev_inp.detach().clone().requires_grad_(True)
+                upward_count = 0
+            else:
+                upward_count += 1
+        else:
+            upward_count=0
+            prev_loss = loss.detach().clone()
+            prev_inp = input_img.detach().clone()
+
+        if j%6000 == 0 and save_dir is not None:
+            np.save(os.path.join(save_dir, f'AST_{hs_num}_metamer_{loss[0]}_ID{ID}.npy'), input_img.cpu().detach().numpy())
+            CHANGE_RATE = True
+
+        #pbar.set_description(f'loss: {loss[0]}, lr: {optimizer.param_groups[0]["lr"]}, up: {upward_count}')
+        pbar.set_description(f'loss: {loss[0]}, lr: {lr * lr_factor(step=j, warmup=256, total_steps=n_steps)}, up: {upward_count}')
+
+    """
     for j in (pbar:= tqdm(range(n_steps))):
         outputs_t = model(input_img)
         hs = torch.square(torch.add(outputs_t.hidden_states[hs_num], -orig_activation[hs_num]))
@@ -72,6 +120,7 @@ def optimise_metamer(input_img, model, orig_activation, hs_num, n_steps, upward_
             CHANGE_RATE = True
 
         pbar.set_description(f'loss: {loss[0]}, lr: {optimizer.param_groups[0]["lr"]}, up: {upward_count}')
+    """
     return prev_inp, prev_loss
 
 
@@ -124,7 +173,7 @@ metamers = get_AST_metamers(sample, model, save_dir=args.savepath, hidden_states
 plt.figure()
 for i in range(N_HS):
     plt.subplot(4,4,i+1)
-    librosa.display.specshow(metamers[i].detach().numpy()[0].T)
+    librosa.display.specshow(metamers[i].cpu().detach().numpy()[0].T)
 plt.savefig(os.path.join(args.savepath, 'metamers_plot.png'))
 
 
