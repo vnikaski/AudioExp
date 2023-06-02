@@ -69,20 +69,6 @@ def optimise_metamer(input_img, model, orig_activation, hs_num, n_steps, upward_
             prev_loss = loss.detach().clone()
             prev_inp = input_img.detach().clone()
 
-        if j==255:
-            print('255 prevloss')
-            print(prev_loss)
-            test_outputs_t = model(input_img)
-            test_hs = torch.square(torch.add(test_outputs_t.hidden_states[hs_num], -orig_activation[hs_num]))
-            test_loss = torch.mul(torch.norm(test_hs, dim=(1,2), p=2), 1/(torch.norm(orig_activation[hs_num])+1e-8))
-            print('cur input loss')
-            print(test_loss)
-            test_outputs_t = model(torch.nn.Parameter(prev_inp.detach().clone().requires_grad_(True).to(device)))
-            test_hs = torch.square(torch.add(test_outputs_t.hidden_states[hs_num], -orig_activation[hs_num]))
-            test_loss = torch.mul(torch.norm(test_hs, dim=(1,2), p=2), 1/(torch.norm(orig_activation[hs_num])+1e-8))
-            print('cur prev inp loss')
-            print(test_loss)
-
 
         pbar.set_description(f'loss: {loss[0]}, lr: {optimizer.param_groups[0]["lr"]}, up: {upward_count}')
     return prev_inp, prev_loss
@@ -101,6 +87,11 @@ def get_AST_metamers(sample, model, save_dir, hidden_states):
             n_steps=256,
             prev_loss=loss
         )
+        input_img = torch.nn.Parameter(prev_img.detach().clone().requires_grad_(True).to(device))
+        test_outputs_t = model(input_img)
+        test_hs = torch.square(torch.add(test_outputs_t.hidden_states[0], -model(sample).hidden_states[0]))
+        test_loss = torch.mul(torch.norm(test_hs, dim=(1,2), p=2), 1/(torch.norm(model(sample).hidden_states[0])+1e-8))
+        print(f'test loss {test_loss}')
         prev_img, prev_loss = optimise_metamer(
             input_img=prev_img,
             model=model,
