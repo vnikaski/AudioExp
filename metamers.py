@@ -27,6 +27,7 @@ def get_data_sample(i):
 
 
 def optimise_metamer(input_img, model, orig_activation, hs_num, n_steps, upward_lim=8, reduce_factor=0.5, prev_loss=None, save_dir=None):
+    CHANGE_RATE = False
     if prev_loss is None:
         prev_loss=np.inf
     upward_count=0
