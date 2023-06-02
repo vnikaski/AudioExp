@@ -44,10 +44,7 @@ def optimise_metamer(input_img, model, orig_activation, hs_num, n_steps, upward_
 
         if j==0:
             print(prev_loss)
-            test_outputs_t = model(input_img)
-            test_hs = torch.square(torch.add(test_outputs_t.hidden_states[hs_num], -orig_activation[hs_num]))
-            test_loss = torch.mul(torch.norm(test_hs, dim=(1,2), p=2), 1/(torch.norm(orig_activation[hs_num])+1e-8))
-            print(test_loss)
+            print(loss)
 
         loss.backward()
         # grads = input_img.grad
@@ -57,6 +54,8 @@ def optimise_metamer(input_img, model, orig_activation, hs_num, n_steps, upward_
             return input_img, loss[0]
 
         if loss>prev_loss:
+            if j==0:
+                print('hi')
             if upward_count>=upward_lim:
                 input_img = torch.nn.Parameter(prev_inp.detach().clone().requires_grad_(True).to(device))
                 #input_img = prev_inp.detach().clone().requires_grad_(True)
