@@ -67,6 +67,7 @@ def optimise_metamer(input_img, model, orig_activation, hs_num, n_steps, upward_
         else:
             upward_count=0
             prev_loss = loss.detach().clone()
+            print('assigning')
             prev_inp = input_img.detach().clone()
 
         pbar.set_description(f'loss: {loss[0]}, lr: {optimizer.param_groups[0]["lr"]}')
