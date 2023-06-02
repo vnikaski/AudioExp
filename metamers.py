@@ -37,7 +37,7 @@ def optimise_metamer(input_img, model, orig_activation, hs_num, n_steps, upward_
     optimizer = torch.optim.Adam([input_img], lr=1e-1)
     #input_img = input_img.to(device).requires_grad_(True)
 
-    for _ in (pbar:= tqdm(range(n_steps))):
+    for j in (pbar:= tqdm(range(n_steps))):
         outputs_t = model(input_img)
         hs = torch.square(torch.add(outputs_t.hidden_states[hs_num], -orig_activation[hs_num]))
         loss = torch.mul(torch.norm(hs, dim=(1,2), p=2), 1/(torch.norm(orig_activation[hs_num])+1e-8))
@@ -45,6 +45,9 @@ def optimise_metamer(input_img, model, orig_activation, hs_num, n_steps, upward_
         loss.backward()
         # grads = input_img.grad
         optimizer.step()
+
+        if j==0:
+            print(prev_loss)
 
         if loss==0:
             return input_img, loss[0]
@@ -77,7 +80,7 @@ def get_AST_metamers(sample, model, save_dir, hidden_states):
                 model=model,
                 orig_activation=model(sample).hidden_states,
                 hs_num=i,
-                n_steps=512,
+                n_steps=256,
                 prev_loss=loss
             )
             np.save(os.path.join(save_dir, f'AST_{i}_metamer_{loss[0]}_ID{ID}.npy'), input_img.cpu().detach().numpy())
