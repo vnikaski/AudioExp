@@ -94,17 +94,40 @@ def get_AST_metamers(sample, model, save_dir, hidden_states):
     for i in hidden_states:
         input_img = torch.tensor(np.random.random_sample(sample.shape), dtype=torch.float32)
         loss=np.inf
-        for _ in range(4):
-            input_img, loss = optimise_metamer(
-                input_img=input_img,
-                model=model,
-                orig_activation=model(sample).hidden_states,
-                hs_num=i,
-                n_steps=256,
-                prev_loss=loss
-            )
-            np.save(os.path.join(save_dir, f'AST_{i}_metamer_{loss[0]}_ID{ID}.npy'), input_img.cpu().detach().numpy())
-            print(loss)
+        prev_img, prev_loss = optimise_metamer(
+            input_img=input_img,
+            model=model,
+            orig_activation=model(sample).hidden_states,
+            hs_num=i,
+            n_steps=256,
+            prev_loss=loss
+        )
+        prev_img, prev_loss = optimise_metamer(
+            input_img=prev_img,
+            model=model,
+            orig_activation=model(sample).hidden_states,
+            hs_num=i,
+            n_steps=256,
+            prev_loss=prev_loss
+        )
+        prev_img, prev_loss = optimise_metamer(
+            input_img=prev_img,
+            model=model,
+            orig_activation=model(sample).hidden_states,
+            hs_num=i,
+            n_steps=256,
+            prev_loss=prev_loss
+        )
+        input_img, loss = optimise_metamer(
+            input_img=prev_img,
+            model=model,
+            orig_activation=model(sample).hidden_states,
+            hs_num=i,
+            n_steps=256,
+            prev_loss=prev_loss
+        )
+
+        np.save(os.path.join(save_dir, f'AST_{i}_metamer_{loss[0]}_ID{ID}.npy'), input_img.cpu().detach().numpy())
         metamers[i] = input_img
     return metamers
 
