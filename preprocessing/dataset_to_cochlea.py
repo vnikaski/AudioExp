@@ -22,6 +22,8 @@ def CV_to_cochlea(dataset_dir, save_dir, sr=16000, offset=0):
         f = os.path.join(files_loc, row["path"])
         if os.path.isfile(f):
             wav, _ = librosa.load(f, sr=sr, duration=2, offset=offset)
+            if len(wav) < sr*2:
+                wav = librosa.util.pad_center(wav, size=sr*2)
             with warnings.catch_warnings():
                 warnings.simplefilter("ignore")
                 spec = get_cochleagram(wav, sr)
