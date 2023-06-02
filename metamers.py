@@ -54,7 +54,11 @@ def optimise_metamer(input_img, model, orig_activation, hs_num, n_steps, upward_
                 input_img = torch.nn.Parameter(prev_inp.detach().clone().requires_grad_(True).to(device))
                 #input_img = prev_inp.detach().clone().requires_grad_(True)
                 upward_count = 0
-                optimizer = torch.optim.Adam([input_img], lr=optimizer.param_groups[0]["lr"]*reduce_factor)
+                if CHANGE_RATE:
+                    optimizer = torch.optim.Adam([input_img], lr=0.1)
+                    CHANGE_RATE = False
+                else:
+                    optimizer = torch.optim.Adam([input_img], lr=optimizer.param_groups[0]["lr"]*reduce_factor)
             else:
                 upward_count += 1
         else:
@@ -64,7 +68,7 @@ def optimise_metamer(input_img, model, orig_activation, hs_num, n_steps, upward_
 
         if j%256 == 0 and save_dir is not None:
             np.save(os.path.join(save_dir, f'AST_{hs_num}_metamer_{loss[0]}_ID{hs_num}.npy'), input_img.cpu().detach().numpy())
-            optimizer = torch.optim.Adam([input_img], lr=1e-1) # reset optim
+            CHANGE_RATE = True
 
         pbar.set_description(f'loss: {loss[0]}, lr: {optimizer.param_groups[0]["lr"]}, up: {upward_count}')
     return prev_inp, prev_loss
