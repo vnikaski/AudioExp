@@ -56,7 +56,7 @@ def optimise_metamer(input_img, model, orig_activation, hs_num, n_steps, upward_
         if loss[0]==0:
             return input_img, loss[0]
 
-        if loss[0]>prev_loss[0]:
+        if loss>prev_loss:
             if upward_count>=upward_lim:
                 input_img = torch.nn.Parameter(prev_inp.detach().clone().requires_grad_(True).to(device))
                 #input_img = prev_inp.detach().clone().requires_grad_(True)
