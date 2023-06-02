@@ -48,6 +48,10 @@ def optimise_metamer(input_img, model, orig_activation, hs_num, n_steps, upward_
 
         if j==0:
             print(prev_loss)
+            test_outputs_t = model(input_img)
+            test_hs = torch.square(torch.add(test_outputs_t.hidden_states[hs_num], -orig_activation[hs_num]))
+            test_loss = torch.mul(torch.norm(test_hs, dim=(1,2), p=2), 1/(torch.norm(orig_activation[hs_num])+1e-8))
+            print(test_loss)
 
         if loss[0]==0:
             return input_img, loss[0]
