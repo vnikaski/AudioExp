@@ -67,7 +67,7 @@ def optimise_metamer(input_img, model, orig_activation, hs_num, n_steps, upward_
             prev_loss = loss.detach().clone()
             prev_inp = input_img.detach().clone()
 
-        if j%256 == 0 and save_dir is not None:
+        if j%6000 == 0 and save_dir is not None:
             np.save(os.path.join(save_dir, f'AST_{hs_num}_metamer_{loss[0]}_ID{hs_num}.npy'), input_img.cpu().detach().numpy())
             CHANGE_RATE = True
 
