@@ -76,26 +76,22 @@ def optimise_metamer(input_img, model, orig_activation, hs_num, n_steps, upward_
 
 def get_AST_metamers(sample, model, save_dir, hidden_states):
     metamers = [torch.tensor(np.random.random_sample(sample.shape), dtype=torch.float32) for _ in range(N_HS)]
+    sample_activation = model(sample).hidden_states
     for i in hidden_states:
         input_img = torch.tensor(np.random.random_sample(sample.shape), dtype=torch.float32)
         loss=np.inf
         prev_img, prev_loss = optimise_metamer(
             input_img=input_img,
             model=model,
-            orig_activation=model(sample).hidden_states,
+            orig_activation=sample_activation,
             hs_num=i,
             n_steps=256,
             prev_loss=loss
         )
-        input_img = torch.nn.Parameter(prev_img.detach().clone().requires_grad_(True).to(device))
-        test_outputs_t = model(input_img)
-        test_hs = torch.square(torch.add(test_outputs_t.hidden_states[0], -model(sample).hidden_states[0]))
-        test_loss = torch.mul(torch.norm(test_hs, dim=(1,2), p=2), 1/(torch.norm(model(sample).hidden_states[0])+1e-8))
-        print(f'test loss {test_loss}')
         prev_img, prev_loss = optimise_metamer(
             input_img=prev_img,
             model=model,
-            orig_activation=model(sample).hidden_states,
+            orig_activation=sample_activation,
             hs_num=i,
             n_steps=256,
             prev_loss=prev_loss
@@ -103,7 +99,7 @@ def get_AST_metamers(sample, model, save_dir, hidden_states):
         prev_img, prev_loss = optimise_metamer(
             input_img=prev_img,
             model=model,
-            orig_activation=model(sample).hidden_states,
+            orig_activation=sample_activation,
             hs_num=i,
             n_steps=256,
             prev_loss=prev_loss
@@ -111,7 +107,7 @@ def get_AST_metamers(sample, model, save_dir, hidden_states):
         input_img, loss = optimise_metamer(
             input_img=prev_img,
             model=model,
-            orig_activation=model(sample).hidden_states,
+            orig_activation=sample_activation,
             hs_num=i,
             n_steps=256,
             prev_loss=prev_loss
