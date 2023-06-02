@@ -67,8 +67,14 @@ def optimise_metamer(input_img, model, orig_activation, hs_num, n_steps, upward_
         else:
             upward_count=0
             prev_loss = loss.detach().clone()
-            print('assigning')
             prev_inp = input_img.detach().clone()
+
+        if j==31:
+            print(prev_loss)
+            test_outputs_t = model(input_img)
+            test_hs = torch.square(torch.add(test_outputs_t.hidden_states[hs_num], -orig_activation[hs_num]))
+            test_loss = torch.mul(torch.norm(test_hs, dim=(1,2), p=2), 1/(torch.norm(orig_activation[hs_num])+1e-8))
+            print(test_loss)
 
         pbar.set_description(f'loss: {loss[0]}, lr: {optimizer.param_groups[0]["lr"]}')
     return prev_inp, prev_loss
