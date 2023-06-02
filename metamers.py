@@ -69,7 +69,7 @@ def optimise_metamer(input_img, model, orig_activation, hs_num, n_steps, upward_
             prev_loss = loss.detach().clone()
             prev_inp = input_img.detach().clone()
 
-        if j==31:
+        if j==255:
             print(prev_loss)
             test_outputs_t = model(input_img)
             test_hs = torch.square(torch.add(test_outputs_t.hidden_states[hs_num], -orig_activation[hs_num]))
@@ -120,6 +120,8 @@ feature_extractor, model = load_AST()
 sample = feature_extractor(dataset[0]["audio"]["array"], sampling_rate=sampling_rate, return_tensors="pt")['input_values']
 
 model.to(device)
+for param in model.parameters():
+    param.requires_grad = False
 sample = sample.to(device)
 
 metamers = get_AST_metamers(sample, model, save_dir=args.savepath, hidden_states=hs)
