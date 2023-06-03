@@ -52,7 +52,7 @@ print('base')
 layer = 'base'
 
 clf = LogisticRegression(max_iter=1000)
-scores = cross_val_score(clf, train_X.reshape((train_X.shape[0], target_shape)), y, cv=10)
+scores = cross_val_score(clf, train_X.reshape((train_X.shape[0], target_shape)), y, cv=10, verbose=3)
 np.save(os.path.join(args.savepath, f'{args.mode}_{layer}.npy'), scores)
 
 print('loading model...')
@@ -88,5 +88,6 @@ for layer in (pbar:= tqdm(layers)):
         clf,
         np.reshape(rep_X, newshape=(rep_X.shape[0], rep_X.shape[1]*rep_X.shape[2]*rep_X.shape[3])),
         y,
-        cv=10)
+        cv=10,
+        verbose=3)
     np.save(os.path.join(args.savepath, f'{args.mode}_{layer}.npy'), scores)
