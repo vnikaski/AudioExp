@@ -11,6 +11,8 @@ import argparse
 
 from tqdm import tqdm
 
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
+
 input_shape = (256,256,1)
 target_shape = 256*256
 
