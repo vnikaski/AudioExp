@@ -47,7 +47,7 @@ def optimise_metamer(input_img, model, orig_activation, hs_num, n_steps, upward_
     #input_img = torch.nn.Parameter(input_img.to(device))
     input_img = torch.nn.Parameter(input_img.detach().clone().requires_grad_(True).to(device))
     prev_inp = input_img.detach().clone()
-    lr = 0.01
+    lr = 0.001
     #optimizer = torch.optim.Adam([input_img], lr=1e-3)
     #scheduler = transformers.get_linear_schedule_with_warmup(optimizer, num_warmup_steps=256, num_training_steps=n_steps)
     #input_img = input_img.to(device).requires_grad_(True)
