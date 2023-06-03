@@ -76,7 +76,7 @@ for lname in list(g_weights.keys()):
 print('...model loaded :)')
 
 
-layers = ['cochleagram', 'relu1', 'max_pool1', 'relu2', 'max_pool2', 'relu3', 'relu4_W', 'relu5_W', 'avg_pool5_W', 'fc6_W', 'fctop_W', 'relu4_G', 'relu5_G', 'avg_pool5_G', 'fc6_G', 'fctop_G']
+layers = ['relu1', 'max_pool1', 'relu2', 'max_pool2', 'relu3', 'relu4_W', 'relu5_W', 'avg_pool5_W', 'fc6_W', 'fctop_W', 'relu4_G', 'relu5_G', 'avg_pool5_G', 'fc6_G', 'fctop_G']
 
 for layer in (pbar:= tqdm(layers)):
     pbar.set_description(f"Layer {layer}")
