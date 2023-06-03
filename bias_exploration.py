@@ -19,14 +19,17 @@ parser.add_argument('--mode', choices=['gender', 'gender2', 'age'])
 parser.add_argument('--savepath')
 args = parser.parse_args()
 
+datapath = args.datapath
 
-validated = pd.read_table('/Volumes/Folder1/cv-corpus-12.0-delta-2022-12-07/en/validated.tsv')
+validated = pd.read_table(os.path.join(datapath, 'validated.tsv'))
 validated = validated[['path', 'sentence', 'age', 'gender']]
 df = validated.dropna().reset_index(drop=True)
 
+datapath = os.path.join(datapath, 'cochleagrams')
+
 train_X = np.empty((len(df), *input_shape))
 for index, fname in enumerate(df['path']):
-    train_X[index] = np.load(os.path.join(args.datapath, fname+'.npy')).reshape(input_shape)
+    train_X[index] = np.load(os.path.join(datapath, fname+'.npy')).reshape(input_shape)
 
 df = df.drop([2437]).reset_index(drop=True)
 train_X = np.delete(train_X, 2437, 0)
