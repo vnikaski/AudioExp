@@ -39,7 +39,7 @@ class Maximiser:
             raise NotImplementedError
 
 
-    def channel(self, channel_number, input_img=None, break_points=[2048], save_dir=None, lr=1e-3, d_t=8, d_f=8, max_cap=None, optimizer=keras.optimizers.legacy.Adam, total_var=1, mode='max', transform_every=1):
+    def channel(self, channel_number, input_img=None, break_points=[2048], save_dir=None, lr=1e-3, d_t=8, d_f=8, max_cap=None, optimizer=keras.optimizers.Adam, total_var=1, mode='max', transform_every=1):
         if self.submodel is None:
             raise ValueError('please initialise the submodel first with init_submodel method')
 
@@ -83,7 +83,7 @@ class Maximiser:
                 every=0
         return output_ims
 
-    def visualise_channels(self, save_dir, break_points, lr=1e-3, d_t=8, d_f=8, optimizer=keras.optimizers.legacy.Adam, total_var=1, mode='max', transform_every=1):
+    def visualise_channels(self, save_dir, break_points, lr=1e-3, d_t=8, d_f=8, optimizer=keras.optimizers.Adam, total_var=1, mode='max', transform_every=1):
         n_channels = self.submodel.layers[-1].output_shape[-1]
         for channel in range(n_channels):
             self.channel(channel, break_points=break_points, save_dir=save_dir, lr=lr, d_t=d_t, d_f=d_f, optimizer=optimizer, total_var=total_var, mode=mode, transform_every=transform_every)
