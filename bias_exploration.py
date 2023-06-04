@@ -2,8 +2,8 @@ from activation.maximiser import Maximiser
 from models.models import Kell2018
 
 import os
-from sklearn.linear_model import LogisticRegression
-from sklearn.model_selection import cross_val_score
+from sklearn.linear_model import LogisticRegression, SGDClassifier
+from sklearn.model_selection import cross_val_score, train_test_split
 import numpy as np
 from matplotlib import pyplot as plt
 import pandas as pd
@@ -42,8 +42,14 @@ print('... data loaded :)')
 df = df.drop([2437]).reset_index(drop=True)
 train_X = np.delete(train_X, 2437, 0)
 
+cut_indices = np.random.sample(len(df)//2)
+
+df = df.drop(cut_indices).reset_index(drop=True)
+train_X = np.delete(train_X, cut_indices, 0)
+
 if args.mode == 'gender':
     y = df['gender']
+    classes = list(df['gender'].unique())
 else:
     raise NotImplementedError
 
