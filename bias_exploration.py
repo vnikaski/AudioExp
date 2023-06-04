@@ -98,4 +98,5 @@ for layer in (pbar:= tqdm(layers)):
         y,
         cv=10,
         verbose=3)
+    del rep_X
     np.save(os.path.join(args.savepath, f'{args.mode}_{layer}.npy'), scores)
