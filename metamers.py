@@ -78,7 +78,7 @@ def optimise_metamer(input_img, model, orig_activation, hs_num, n_steps, upward_
             prev_loss = loss.detach().clone()
             prev_inp = input_img.detach().clone()
 
-        input_img = torch.Tensor(np.clip(np.asarray(input_img)))
+        input_img = torch.Tensor(np.clip(np.asarray(input_img.cpu())))
         input_img = torch.nn.Parameter(input_img.requires_grad_(True).to(device))
 
         if j%6000 == 0 and save_dir is not None:
