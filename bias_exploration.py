@@ -6,12 +6,15 @@ from sklearn.linear_model import LogisticRegression, SGDClassifier
 from sklearn.model_selection import cross_val_score, train_test_split, StratifiedKFold
 import numpy as np
 from matplotlib import pyplot as plt
+import tensorflow as tf
 import pandas as pd
 import argparse
 
 from tqdm import tqdm
 
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
+os.environ['CUDA_VISIBLE_DEVICES'] = '-1'
+tf.config.set_visible_devices([], 'GPU')
 
 input_shape = (256,256,1)
 target_shape = 256*256
