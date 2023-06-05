@@ -105,7 +105,7 @@ for layer in layers:
     clf = LogisticRegression(max_iter=1000)
     scores = cross_val_score(
         clf,
-        np.reshape(rep_X, newshape=(rep_X.shape[0], rep_X.shape[1]*rep_X.shape[2]*rep_X.shape[3])),
+        np.reshape(rep_X, newshape=(rep_X.shape[0], np.prod(rep_X.shape[1:]))),
         y,
         cv=10,
         verbose=3,
