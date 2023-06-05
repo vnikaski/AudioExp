@@ -45,7 +45,7 @@ print('... data loaded :)')
 df = df.drop([2437]).reset_index(drop=True)
 train_X = np.delete(train_X, 2437, 0)
 
-cut_indices = np.random.choice(list(range(len(df))), len(df)//4, replace=False)
+cut_indices = np.random.choice(list(range(len(df))), len(df)//10, replace=False)
 
 df = df.drop(cut_indices).reset_index(drop=True)
 train_X = np.delete(train_X, cut_indices, 0)
