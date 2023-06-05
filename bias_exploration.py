@@ -3,7 +3,7 @@ from models.models import Kell2018
 
 import os
 from sklearn.linear_model import LogisticRegression, SGDClassifier
-from sklearn.model_selection import cross_val_score, train_test_split
+from sklearn.model_selection import cross_val_score, train_test_split, StratifiedKFold
 import numpy as np
 from matplotlib import pyplot as plt
 import pandas as pd
@@ -42,7 +42,7 @@ print('... data loaded :)')
 df = df.drop([2437]).reset_index(drop=True)
 train_X = np.delete(train_X, 2437, 0)
 
-cut_indices = np.random.choice(list(range(len(df))), len(df)//2, replace=False)
+cut_indices = np.random.choice(list(range(len(df))), len(df)//4, replace=False)
 
 df = df.drop(cut_indices).reset_index(drop=True)
 train_X = np.delete(train_X, cut_indices, 0)
@@ -60,6 +60,14 @@ print('base')
 layer = 'base'
 
 clf = LogisticRegression(max_iter=1000)
+
+"""
+skf = StratifiedKFold(n_splits=10, shuffle=True, random_state=0)
+
+for i, (train_index, test_index) in enumerate(skf.split(X=train_X, y=y)):
+    clf = SGDClassifier(loss='log')
+"""
+
 scores = cross_val_score(clf, train_X.reshape((train_X.shape[0], target_shape)), y, cv=10, verbose=3)
 np.save(os.path.join(args.savepath, f'{args.mode}_{layer}.npy'), scores)
 
@@ -86,8 +94,8 @@ print('...model loaded :)')
 
 layers = ['relu1', 'max_pool1', 'relu2', 'max_pool2', 'relu3', 'relu4_W', 'relu5_W', 'avg_pool5_W', 'fc6_W', 'fctop_W', 'relu4_G', 'relu5_G', 'avg_pool5_G', 'fc6_G', 'fctop_G']
 
-for layer in (pbar:= tqdm(layers)):
-    pbar.set_description(f"Layer {layer}")
+for layer in layers:
+    print(layer)
     maxim = Maximiser()
     maxim.init_submodel(model=model, out_layer_name=layer)
     rep_X = maxim.submodel.predict(train_X)
@@ -97,6 +105,7 @@ for layer in (pbar:= tqdm(layers)):
         np.reshape(rep_X, newshape=(rep_X.shape[0], rep_X.shape[1]*rep_X.shape[2]*rep_X.shape[3])),
         y,
         cv=10,
-        verbose=3)
+        verbose=3,
+    )
     del rep_X
     np.save(os.path.join(args.savepath, f'{args.mode}_{layer}.npy'), scores)
