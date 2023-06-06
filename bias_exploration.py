@@ -31,6 +31,8 @@ datapath = args.datapath
 validated = pd.read_table(os.path.join(datapath, 'validated.tsv'))
 validated = validated[['path', 'sentence', 'age', 'gender']]
 df = validated.dropna().reset_index(drop=True)
+df = df.drop([2437]).reset_index(drop=True)
+df = df.sample(frac=1, random_state=0).reset_index(drop=True)
 
 datapath = os.path.join(datapath, 'cochleagrams')
 
@@ -42,8 +44,6 @@ for index, fname in enumerate(df['path']):
 
 print('... data loaded :)')
 
-df = df.drop([2437]).reset_index(drop=True)
-train_X = np.delete(train_X, 2437, 0)
 
 cut_indices = np.random.choice(list(range(len(df))), int(len(df)*0.5), replace=False)
 
