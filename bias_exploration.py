@@ -45,7 +45,7 @@ print('... data loaded :)')
 df = df.drop([2437]).reset_index(drop=True)
 train_X = np.delete(train_X, 2437, 0)
 
-cut_indices = np.random.choice(list(range(len(df))), int(len(df)*0.6), replace=False)
+cut_indices = np.random.choice(list(range(len(df))), int(len(df)*0.5), replace=False)
 
 df = df.drop(cut_indices).reset_index(drop=True)
 train_X = np.delete(train_X, cut_indices, 0)
@@ -53,6 +53,9 @@ train_X = np.delete(train_X, cut_indices, 0)
 if args.mode == 'gender':
     y = df['gender']
     classes = list(df['gender'].unique())
+elif args.mode == 'age':
+    y = df['age']
+    classes = list(df['age'].unique())
 else:
     raise NotImplementedError
 
