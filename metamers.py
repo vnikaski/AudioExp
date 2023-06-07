@@ -23,11 +23,19 @@ device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 def rescale_gradients(gradients):
     return gradients/(torch.sqrt(torch.mean(input=torch.square(gradients), dim=[1,2], keepdims=True))+1e-6)
 
+"""
 def lr_factor(step, warmup, total_steps):
     if step < warmup:
         return step * (1/warmup)
     elif step >= warmup:
         return 1 - (step-warmup)*(1/(total_steps-warmup))
+"""
+
+def lr_factor(step, warmup, total_steps):
+    if step < warmup:
+        return step*(1/warmup)
+    elif step >= warmup:
+        return 0.5 * (1 + np.cos(np.pi * (step-warmup) / (total_steps-warmup)))
 
 
 def get_data_sample(i):
