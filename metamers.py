@@ -15,7 +15,7 @@ import argparse
 from models.load_AST import load_AST
 
 N_HS = 13
-ID = 0
+# ID = 1
 
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
@@ -150,7 +150,10 @@ parser = argparse.ArgumentParser()
 
 parser.add_argument('--savepath')
 parser.add_argument('--hiddenstates', default='all')
+parser.add_argument('--id', default=0)
 args = parser.parse_args()
+
+ID = int(args.id)
 
 dataset = load_dataset("hf-internal-testing/librispeech_asr_demo", "clean", split="validation")
 dataset = dataset.sort("id")
@@ -164,7 +167,7 @@ else:
     hs = [int(state) for state in hs]
 
 feature_extractor, model = load_AST()
-sample = feature_extractor(dataset[0]["audio"]["array"], sampling_rate=sampling_rate, return_tensors="pt")['input_values']
+sample = feature_extractor(dataset[ID]["audio"]["array"], sampling_rate=sampling_rate, return_tensors="pt")['input_values']
 
 model.to(device)
 for param in model.parameters():
