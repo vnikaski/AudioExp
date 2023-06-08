@@ -64,12 +64,12 @@ def optimise_metamer(input_img, model, orig_activation, hs_num, n_steps, upward_
     for j in (pbar:= tqdm(range(n_steps))):
         with tf.GradientTape() as gtape:
             outputs_t = model(input_img)
-            hs = K.square(tf.add(outputs_t,-orig_activation))
+            hs = tf.add(outputs_t,-orig_activation)
             loss = tf.math.multiply(tf.norm(hs, ord=2), 1/(tf.norm(orig_activation, ord=2)+1e-8))
 
             grads = gtape.gradient(loss, input_img)
 
-        input_img.assign_sub(lr * lr_factor(step=j, warmup=256, total_steps=n_steps) * rescale_gradients(grads))
+        input_img.assign_add(- lr * lr_factor(step=j, warmup=256, total_steps=n_steps) * rescale_gradients(grads))
 
         if loss==0:
             return input_img, loss
