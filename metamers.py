@@ -63,7 +63,7 @@ def optimise_metamer(input_img, model, orig_activation, hs_num, n_steps, upward_
     for j in (pbar:= tqdm(range(n_steps))):
         outputs_t = model(input_img)
         hs = torch.add(outputs_t.hidden_states[hs_num], -orig_activation[hs_num])
-        loss = torch.mul(torch.norm(hs, dim=(1,2), p=2), 1/(torch.norm(orig_activation[hs_num])+1e-8))
+        loss = torch.mul(torch.norm(hs, dim=(1,2), p=2), 1/(torch.norm(orig_activation[hs_num], p=2)+1e-8))
 
         loss.backward()
         grads = input_img.grad
@@ -89,7 +89,7 @@ def optimise_metamer(input_img, model, orig_activation, hs_num, n_steps, upward_
         input_img = torch.Tensor(np.clip(input_img.detach().cpu().numpy(), a_min=-1.5, a_max=1.5))
         input_img = torch.nn.Parameter(input_img.requires_grad_(True).to(device))
 
-        if j%6000 == 0 and save_dir is not None:
+        if j%500 == 0 and save_dir is not None:
             np.save(os.path.join(save_dir, f'AST_{hs_num}_metamer_{loss[0]}_ID{ID}.npy'), input_img.cpu().detach().numpy())
             CHANGE_RATE = True
 
