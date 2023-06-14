@@ -46,7 +46,7 @@ def get_data_sample(i):
     return sample, sampling_rate
 
 
-def optimise_metamer(input_img, model, orig_activation, hs_num, n_steps, upward_lim=8, reduce_factor=0.5, prev_loss=None, save_dir=None):
+def optimise_metamer(input_img, model, orig_activation, hs_num, n_steps, upward_lim=16, reduce_factor=0.5, prev_loss=None, save_dir=None):
     CHANGE_RATE = False
     if prev_loss is None:
         prev_loss=np.inf
@@ -90,7 +90,8 @@ def optimise_metamer(input_img, model, orig_activation, hs_num, n_steps, upward_
         input_img = torch.nn.Parameter(input_img.requires_grad_(True).to(device))
 
         if j%500 == 0 and save_dir is not None:
-            np.save(os.path.join(save_dir, f'AST_{hs_num}_metamer_{loss[0]}_ID{ID}.npy'), input_img.cpu().detach().numpy())
+            for k in range(input_img.shape[0]):
+                np.save(os.path.join(save_dir, f'{k}_AST_{hs_num}_metamer_{loss[0]}_ID{ID}.npy'), input_img.cpu().detach().numpy())
             CHANGE_RATE = True
 
         #pbar.set_description(f'loss: {loss[0]}, lr: {optimizer.param_groups[0]["lr"]}, up: {upward_count}')
@@ -135,11 +136,11 @@ def optimise_metamer(input_img, model, orig_activation, hs_num, n_steps, upward_
     return prev_inp, prev_loss
 
 
-def get_AST_metamers(sample, model, save_dir, hidden_states):
-    metamers = [torch.tensor(np.random.random_sample(sample.shape), dtype=torch.float32) for _ in range(N_HS)]
+def get_AST_metamers(sample, model, save_dir, hidden_states, n_mets=1):
+    metamers = [torch.tensor(np.random.random_sample((n_mets, *sample.shape[1:])), dtype=torch.float32) for _ in range(N_HS)]
     sample_activation = model(sample).hidden_states
     for i in hidden_states:
-        input_img = torch.tensor(np.random.random_sample(sample.shape), dtype=torch.float32)
+        input_img = torch.tensor(np.random.random_sample((n_mets, sample.shape[1:])), dtype=torch.float32)
         loss=np.inf
         input_img, loss = optimise_metamer(
             input_img=input_img,
@@ -150,7 +151,7 @@ def get_AST_metamers(sample, model, save_dir, hidden_states):
             prev_loss=loss,
             save_dir=save_dir
         )
-        np.save(os.path.join(save_dir, f'AST_{i}_metamer_{loss[0]}_ID{ID}.npy'), input_img.cpu().detach().numpy())
+        np.save(os.path.join(save_dir, f'AST_{i}_metamers_{loss[0]}_ID{ID}.npy'), input_img.cpu().detach().numpy())
         metamers[i] = input_img
     return metamers
 
