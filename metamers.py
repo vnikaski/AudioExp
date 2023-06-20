@@ -83,7 +83,8 @@ def optimise_metamer(input_img, model, orig_activation, hs_num, n_steps, upward_
         for m in range(len(loss)):
             if loss[m] >= prev_loss[m]:
                 if upward_count[m] >= upward_lim:
-                    input_img[m] = prev_inp[m].detach().clone().requires_grad_(True)
+                    with torch.no_grad():
+                        input_img[m] = prev_inp[m].detach().clone().requires_grad_(True)
                     #input_img = prev_inp.detach().clone().requires_grad_(True)
                     upward_count[m] = 0
                 else:
