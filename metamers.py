@@ -84,7 +84,7 @@ def optimise_metamer(input_img, model, orig_activation, hs_num, n_steps, upward_
             if loss[m] >= prev_loss[m]:
                 if upward_count[m] >= upward_lim:
                     with torch.no_grad():
-                        input_img[m] = prev_inp[m].detach().clone().requires_grad_(True)
+                        input_img[m] = prev_inp[m].detach().clone()
                     #input_img = prev_inp.detach().clone().requires_grad_(True)
                     upward_count[m] = 0
                 else:
@@ -93,6 +93,7 @@ def optimise_metamer(input_img, model, orig_activation, hs_num, n_steps, upward_
                 upward_count[m]=0
                 prev_loss[m] = loss[m].detach().clone()
                 prev_inp[m] = input_img[m].detach().clone()
+        input_img = prev_inp.detach().clone().requires_grad_(True)
 
         input_img = torch.Tensor(np.clip(input_img.detach().cpu().numpy(), a_min=-1.5, a_max=1.5))
         input_img = torch.nn.Parameter(input_img.requires_grad_(True).to(device))
