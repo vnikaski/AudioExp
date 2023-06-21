@@ -136,6 +136,7 @@ def optimise_metamer(input_img, model, orig_activation, hs_num, n_steps, upward_
     return prev_inp, prev_loss
 
 
+
 def get_AST_metamers(sample, model, save_dir, hidden_states):
     metamers = [torch.tensor(np.random.random_sample(sample.shape), dtype=torch.float32) for _ in range(N_HS)]
     sample_activation = model(sample).hidden_states
