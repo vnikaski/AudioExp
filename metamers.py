@@ -46,7 +46,7 @@ def get_data_sample(i):
     return sample, sampling_rate
 
 
-def optimise_metamer(input_img, model, orig_activation, hs_num, n_steps, upward_lim=8, reduce_factor=0.5, prev_loss=None, save_dir=None):
+def optimise_metamer(input_img, model, orig_activation, hs_num, n_steps, upward_lim=8, reduce_factor=0.5, prev_loss=None, save_dir=None, seed=None):
     CHANGE_RATE = False
     if prev_loss is None:
         prev_loss=np.inf
@@ -91,7 +91,7 @@ def optimise_metamer(input_img, model, orig_activation, hs_num, n_steps, upward_
 
 
         if j%500 == 0 and save_dir is not None:
-            np.save(os.path.join(save_dir, f'AST_{hs_num}_metamer_{loss[0]}_ID{ID}.npy'), input_img.cpu().detach().numpy())
+            np.save(os.path.join(save_dir, f'AST_{hs_num}_metamer_{loss[0]}_ID{ID}_seed{seed}.npy'), input_img.cpu().detach().numpy())
             CHANGE_RATE = True
 
         #pbar.set_description(f'loss: {loss[0]}, lr: {optimizer.param_groups[0]["lr"]}, up: {upward_count}')
@@ -152,9 +152,10 @@ def get_AST_metamers(sample, model, save_dir, hidden_states, seed):
             hs_num=i,
             n_steps=24000,
             prev_loss=loss,
-            save_dir=save_dir
+            save_dir=save_dir,
+            seed=seed
         )
-        np.save(os.path.join(save_dir, f'AST_{i}_metamer_{loss[0]}_ID{ID}.npy'), input_img.cpu().detach().numpy())
+        np.save(os.path.join(save_dir, f'AST_{i}_metamer_{loss[0]}_ID{ID}_seed{seed}.npy'), input_img.cpu().detach().numpy())
         metamers[i] = input_img
     return metamers
 
