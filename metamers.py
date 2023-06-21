@@ -136,10 +136,13 @@ def optimise_metamer(input_img, model, orig_activation, hs_num, n_steps, upward_
     return prev_inp, prev_loss
 
 
-def get_AST_metamers(sample, model, save_dir, hidden_states):
-    metamers = [torch.tensor(np.random.random_sample(sample.shape), dtype=torch.float32) for _ in range(N_HS)]
+def get_AST_metamers(sample, model, save_dir, hidden_states, seed):
+
+    metamers = [torch.tensor(np.random.random_sample(sample.shape, ), dtype=torch.float32) for _ in range(N_HS)]
     sample_activation = model(sample).hidden_states
     for i in hidden_states:
+        if seed is not None:
+            np.random.seed(int(seed))
         input_img = torch.tensor(np.random.random_sample(sample.shape), dtype=torch.float32)
         loss=np.inf
         input_img, loss = optimise_metamer(
@@ -160,6 +163,7 @@ parser = argparse.ArgumentParser()
 parser.add_argument('--savepath')
 parser.add_argument('--hiddenstates', default='all')
 parser.add_argument('--id', default=0)
+parser.add_argument('--seed', default=None)
 args = parser.parse_args()
 
 ID = int(args.id)
@@ -183,7 +187,7 @@ for param in model.parameters():
     param.requires_grad = False
 sample = sample.to(device)
 
-metamers = get_AST_metamers(sample, model, save_dir=args.savepath, hidden_states=hs)
+metamers = get_AST_metamers(sample, model, save_dir=args.savepath, hidden_states=hs, seed=args.seed)
 
 plt.figure()
 for i in range(N_HS):
