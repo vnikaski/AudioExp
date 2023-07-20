@@ -17,8 +17,8 @@ from models.load_AST import load_AST
 N_HS = 13
 # ID = 1
 
-device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-
+#device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+device = torch.device("mps")
 
 def rescale_gradients(gradients):
     return gradients/(torch.sqrt(torch.mean(input=torch.square(gradients), dim=[1,2], keepdims=True))+1e-6)
