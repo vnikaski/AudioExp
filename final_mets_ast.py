@@ -11,6 +11,7 @@ from matplotlib import pyplot as plt
 import os
 from datasets import load_dataset
 import argparse
+import time
 
 from models.load_AST import load_AST
 
@@ -36,14 +37,6 @@ def lr_factor(step, warmup, total_steps):
         return step*(1/warmup)
     elif step >= warmup:
         return 0.5 * (1 + np.cos(np.pi * (step-warmup) / (total_steps-warmup)))
-
-
-def get_data_sample(i):
-    dataset = load_dataset("hf-internal-testing/librispeech_asr_demo", "clean", split="validation")
-    dataset = dataset.sort("id")
-    sampling_rate = dataset.features["audio"].sampling_rate
-    sample = dataset[i]["audio"]["array"]
-    return sample, sampling_rate
 
 
 def optimise_metamer(input_img, model, orig_activation, hs_num, n_steps, upward_lim=8, reduce_factor=0.5, prev_loss=None, save_dir=None, seed=None):
@@ -159,42 +152,22 @@ def get_AST_metamers(sample, model, save_dir, hidden_states, seed):
         metamers[i] = input_img
     return metamers
 
-parser = argparse.ArgumentParser()
+data_path = './testing_data/'
+save_path = './master_metamers/'
+seeds = [0, 17, 21, 121, 187, 420, 517, 2137]
+hs = list(range(N_HS))
 
-parser.add_argument('--savepath')
-parser.add_argument('--hiddenstates', default='all')
-parser.add_argument('--id', default=0)
-parser.add_argument('--seed', default=None)
-args = parser.parse_args()
+for sample_name in os.listdir(data_path):
+    for seed in seeds:
+        wav_sample, sr = librosa.load(data_path+sample_name, sr=None)
+        ID = sample_name.split('.')[0]
+        feature_extractor, model = load_AST()
+        sample = feature_extractor(wav_sample, sampling_rate=sr, return_tensors="pt")['input_values']
 
-ID = int(args.id)
+        model.to(device)
+        for param in model.parameters():
+            param.requires_grad = False
+        sample = sample.to(device)
 
-dataset = load_dataset("hf-internal-testing/librispeech_asr_demo", "clean", split="validation")
-dataset = dataset.sort("id")
-sampling_rate = dataset.features["audio"].sampling_rate
-
-hs = args.hiddenstates
-if hs == 'all':
-    hs = list(range(N_HS))
-else:
-    hs = hs.split('-')
-    hs = [int(state) for state in hs]
-
-feature_extractor, model = load_AST()
-sample = feature_extractor(dataset[ID]["audio"]["array"], sampling_rate=sampling_rate, return_tensors="pt")['input_values']
-
-model.to(device)
-for param in model.parameters():
-    param.requires_grad = False
-sample = sample.to(device)
-
-metamers = get_AST_metamers(sample, model, save_dir=args.savepath, hidden_states=hs, seed=args.seed)
-
-plt.figure()
-for i in range(N_HS):
-    plt.subplot(4,4,i+1)
-    librosa.display.specshow(metamers[i].cpu().detach().numpy()[0].T)
-plt.savefig(os.path.join(args.savepath, 'metamers_plot.png'))
-
-
-
+        metamers = get_AST_metamers(sample, model, save_dir=save_path, hidden_states=hs, seed=seed)
+        time.sleep(600) # 10 min break after each metamer
