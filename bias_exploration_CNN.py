@@ -12,9 +12,9 @@ import argparse
 
 from tqdm import tqdm
 
-os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
-os.environ['CUDA_VISIBLE_DEVICES'] = '-1'
-tf.config.set_visible_devices([], 'GPU')
+# os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
+# os.environ['CUDA_VISIBLE_DEVICES'] = '-1'
+# tf.config.set_visible_devices([], 'GPU')
 
 input_shape = (256,256,1)
 target_shape = 256*256
@@ -22,17 +22,20 @@ target_shape = 256*256
 parser = argparse.ArgumentParser()
 
 parser.add_argument('--datapath')
-parser.add_argument('--mode', choices=['gender', 'gender2', 'age'])
+parser.add_argument('--mode', choices=['gender', 'age'])
 parser.add_argument('--savepath')
 args = parser.parse_args()
 
 datapath = args.datapath
 
-validated = pd.read_table(os.path.join(datapath, 'validated.tsv'))
-validated = validated[['path', 'sentence', 'age', 'gender']]
+validated = pd.read_csv(os.path.join(datapath, f'{args.mode}_df.csv'))
+if args.mode == 'gender':
+    validated = validated[['path', 'sentence', 'age', 'gender']]
+else:
+    validated = validated[['path', 'sentence', 'age_grouped', 'gender']]
+    validated['age'] = validated['age_grouped']
 df = validated.dropna().reset_index(drop=True)
-df = df.drop([2437]).reset_index(drop=True)
-df = df.sample(frac=1, random_state=0).reset_index(drop=True)
+# df = df.sample(frac=1, random_state=0).reset_index(drop=True)
 
 datapath = os.path.join(datapath, 'cochleagrams')
 
@@ -45,10 +48,10 @@ for index, fname in enumerate(df['path']):
 print('... data loaded :)')
 
 
-cut_indices = np.random.choice(list(range(len(df))), int(len(df)*0.6), replace=False)
+# cut_indices = np.random.choice(list(range(len(df))), int(len(df)*0.6), replace=False)
 
-df = df.drop(cut_indices).reset_index(drop=True)
-train_X = np.delete(train_X, cut_indices, 0)
+# df = df.drop(cut_indices).reset_index(drop=True)
+# train_X = np.delete(train_X, cut_indices, 0)
 
 if args.mode == 'gender':
     y = df['gender']
@@ -114,4 +117,4 @@ for layer in layers:
         verbose=3,
     )
     del rep_X
-    np.save(os.path.join(args.savepath, f'{args.mode}_{layer}.npy'), scores)
+    np.save(os.path.join(args.savepath, f'{args.mode}_{layer}_CNN.npy'), scores)

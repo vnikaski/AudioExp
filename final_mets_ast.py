@@ -49,6 +49,7 @@ def optimise_metamer(input_img, model, orig_activation, hs_num, n_steps, upward_
     input_img = torch.nn.Parameter(input_img.detach().clone().requires_grad_(True).to(device))
     prev_inp = input_img.detach().clone()
     lr = 0.001
+    model=model.eval()
     #optimizer = torch.optim.Adam([input_img], lr=1e-3)
     #scheduler = transformers.get_linear_schedule_with_warmup(optimizer, num_warmup_steps=256, num_training_steps=n_steps)
     #input_img = input_img.to(device).requires_grad_(True)
@@ -130,7 +131,7 @@ def optimise_metamer(input_img, model, orig_activation, hs_num, n_steps, upward_
 
 
 def get_AST_metamers(sample, model, save_dir, hidden_states, seed):
-
+    model = model.eval()
     metamers = [torch.tensor(np.random.random_sample(sample.shape, ), dtype=torch.float32) for _ in range(N_HS)]
     sample_activation = model(sample).hidden_states
     for i in hidden_states:
@@ -153,9 +154,10 @@ def get_AST_metamers(sample, model, save_dir, hidden_states, seed):
     return metamers
 
 data_path = './testing_data/'
-save_path = './master_metamers/'
+save_path = './eval_mets/'
 seeds = [0, 17, 21, 121, 187, 420, 517, 2137]
-hs = list(range(N_HS))
+#hs = list(range(N_HS))
+hs = [11,12]
 
 for sample_name in os.listdir(data_path):
     for seed in seeds:
