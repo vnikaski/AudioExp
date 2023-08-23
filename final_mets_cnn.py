@@ -96,7 +96,7 @@ def get_CNN_metamers(sample, orig_model, save_dir, seed):
             save_dir=save_dir,
             seed=seed
         )
-        np.save(os.path.join(save_dir, f'CNN_{layer}_metamer_{loss[0]}_ID{ID}_seed{seed}.npy'), input_img.numpy())
+        np.save(os.path.join(save_dir, f'CNN_{layer}_metamer_{loss}_ID{ID}_seed{seed}.npy'), input_img.numpy())
         metamers[i] = input_img
     return metamers
 
