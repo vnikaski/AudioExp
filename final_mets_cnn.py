@@ -58,7 +58,7 @@ def optimise_metamer(input_img, model, orig_activation, layer, n_steps, upward_l
             prev_loss = tf.identity(loss)
             prev_inp = tf.identity(input_img)
 
-        input_img = K.variable(np.clip(input_img.numpy(), a_min=-1.5, a_max=1.5))
+        input_img = K.variable(np.clip(input_img.numpy(), a_min=0, a_max=255))
 
         if j%500 == 0 and save_dir is not None:
             np.save(os.path.join(save_dir, f'CNN_{layer}_metamer_{loss}_ID{ID}_seed{seed}.npy'), input_img.numpy())
@@ -71,7 +71,7 @@ def optimise_metamer(input_img, model, orig_activation, layer, n_steps, upward_l
 
 def get_CNN_metamers(sample, orig_model, save_dir, seed):
     input_shape = orig_model.input_shape[1:]
-    layers = ['relu1', 'relu2', 'relu3', 'relu4_W', 'relu4_G', 'relu5_W', 'WDrop1', 'fc6_W', 'fc6_G', 'fctop_W', 'fctop_G']
+    layers = ['relu1', 'relu2', 'relu3', 'relu4_W', 'relu4_G', 'relu5_W', 'relu5_G', 'fc6_W', 'fc6_G', 'fctop_W', 'fctop_G']
     metamers = [K.variable(np.random.random_sample(sample.shape, )) for _ in range(len(layers))]
     for i,layer in enumerate(layers):
         if seed is not None:
